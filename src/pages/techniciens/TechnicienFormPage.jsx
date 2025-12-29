@@ -114,7 +114,8 @@ export default function TechnicienFormPage() {
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="Disponible">Disponible</SelectItem>
-                                    <SelectItem value="Occupé">Occupé</SelectItem>
+                                    <SelectItem value="En intervention">En intervention</SelectItem>
+                                    <SelectItem value="Absent">Absent</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

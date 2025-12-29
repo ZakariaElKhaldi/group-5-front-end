@@ -115,8 +115,8 @@ export default function InterventionsPage() {
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">Toutes priorités</SelectItem>
-                        <SelectItem value="Basse">Basse</SelectItem>
                         <SelectItem value="Normale">Normale</SelectItem>
+                        <SelectItem value="Elevee">Élevée</SelectItem>
                         <SelectItem value="Urgente">Urgente</SelectItem>
                     </SelectContent>
                 </Select>

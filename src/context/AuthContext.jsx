@@ -8,6 +8,27 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Fetch full user profile from /api/me
+    const fetchUserProfile = async () => {
+        try {
+            const response = await api.get('/me');
+            const data = response.data;
+            setUser({
+                id: data.id,
+                email: data.email,
+                nom: data.nom,
+                prenom: data.prenom,
+                roles: data.roles,
+                technicien: data.technicien, // Contains id, specialite, tauxHoraire, statut
+            });
+        } catch (error) {
+            console.error('Failed to fetch user profile:', error);
+            // Token might be invalid, clear it
+            localStorage.removeItem('token');
+            setUser(null);
+        }
+    };
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -15,18 +36,19 @@ export function AuthProvider({ children }) {
                 const decoded = jwtDecode(token);
                 // Check if token is expired
                 if (decoded.exp * 1000 > Date.now()) {
-                    setUser({
-                        email: decoded.username,
-                        roles: decoded.roles || [],
-                    });
+                    // Fetch full profile from /api/me
+                    fetchUserProfile().finally(() => setLoading(false));
                 } else {
                     localStorage.removeItem('token');
+                    setLoading(false);
                 }
             } catch (error) {
                 localStorage.removeItem('token');
+                setLoading(false);
             }
+        } else {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const login = async (email, password) => {
@@ -36,11 +58,10 @@ export function AuthProvider({ children }) {
         });
         const { token } = response.data;
         localStorage.setItem('token', token);
-        const decoded = jwtDecode(token);
-        setUser({
-            email: decoded.username,
-            roles: decoded.roles || [],
-        });
+
+        // Fetch full profile after login
+        await fetchUserProfile();
+
         return response;
     };
 
@@ -49,11 +70,44 @@ export function AuthProvider({ children }) {
         setUser(null);
     };
 
+    // Update technician status
+    const updateTechnicienStatus = async (newStatus) => {
+        try {
+            const response = await api.patch('/me/status', { statut: newStatus });
+            if (user?.technicien) {
+                setUser({
+                    ...user,
+                    technicien: {
+                        ...user.technicien,
+                        statut: response.data.statut,
+                    },
+                });
+            }
+            return response.data;
+        } catch (error) {
+            console.error('Failed to update status:', error);
+            throw error;
+        }
+    };
+
     const isAdmin = () => user?.roles?.includes('ROLE_ADMIN');
     const isTechnicien = () => user?.roles?.includes('ROLE_TECHNICIEN');
+    const getTechnicienId = () => user?.technicien?.id || null;
+    const getTechnicienStatus = () => user?.technicien?.statut || null;
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading, isAdmin, isTechnicien }}>
+        <AuthContext.Provider value={{
+            user,
+            login,
+            logout,
+            loading,
+            isAdmin,
+            isTechnicien,
+            getTechnicienId,
+            getTechnicienStatus,
+            updateTechnicienStatus,
+            fetchUserProfile,
+        }}>
             {children}
         </AuthContext.Provider>
     );
