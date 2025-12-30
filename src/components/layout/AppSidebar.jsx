@@ -10,6 +10,8 @@ import {
     Building2,
     LogOut,
     ChevronUp,
+    Package,
+    Truck,
 } from 'lucide-react';
 import {
     Sidebar,
@@ -46,6 +48,13 @@ const adminNavGroups = [
         ],
     },
     {
+        title: 'Inventaire',
+        items: [
+            { name: 'Pièces', path: '/pieces', icon: Package },
+            { name: 'Fournisseurs', path: '/fournisseurs', icon: Truck },
+        ],
+    },
+    {
         title: 'Équipe & Clients',
         items: [
             { name: 'Techniciens', path: '/techniciens', icon: Users },
@@ -64,11 +73,35 @@ const techNavGroups = [
     },
 ];
 
+const receptionistNavGroups = [
+    {
+        title: 'Principal',
+        items: [
+            { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+        ],
+    },
+    {
+        title: 'Gestion',
+        items: [
+            { name: 'Interventions', path: '/interventions', icon: Wrench },
+            { name: 'Machines', path: '/machines', icon: Settings2 },
+            { name: 'Pannes', path: '/pannes', icon: AlertTriangle },
+            { name: 'Clients', path: '/clients', icon: Building2 },
+        ],
+    },
+];
+
 export function AppSidebar() {
-    const { user, logout, isAdmin } = useAuth();
+    const { user, logout, isAdmin, isReceptionist } = useAuth();
     const navigate = useNavigate();
 
-    const navGroups = isAdmin() ? adminNavGroups : techNavGroups;
+    // Determine which nav groups to show based on role
+    let navGroups = techNavGroups;
+    if (isAdmin()) {
+        navGroups = adminNavGroups;
+    } else if (isReceptionist()) {
+        navGroups = receptionistNavGroups;
+    }
 
     const handleLogout = () => {
         logout();
@@ -85,7 +118,7 @@ export function AppSidebar() {
                     <div className="flex flex-col">
                         <span className="font-bold text-sm">MaintenancePro</span>
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                            {isAdmin() ? 'Admin Panel' : 'Technicien'}
+                            {isAdmin() ? 'Admin Panel' : isReceptionist() ? 'Réception' : 'Technicien'}
                         </span>
                     </div>
                 </div>

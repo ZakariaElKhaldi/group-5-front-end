@@ -34,7 +34,7 @@ export default function InterventionsPage() {
         priorite: 'all',
     });
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, isTechnicien, isAdmin, getTechnicienId } = useAuth();
 
     const fetchInterventions = async () => {
         setLoading(true);
@@ -46,6 +46,14 @@ export default function InterventionsPage() {
             });
             if (filters.statut !== 'all') params.append('statut', filters.statut);
             if (filters.priorite !== 'all') params.append('priorite', filters.priorite);
+
+            // If technician, filter by their ID
+            if (isTechnicien() && !isAdmin()) {
+                const techId = getTechnicienId();
+                if (techId) {
+                    params.append('technicien', techId);
+                }
+            }
 
             const response = await api.get(`/interventions?${params.toString()}`);
             setInterventions(response.data);

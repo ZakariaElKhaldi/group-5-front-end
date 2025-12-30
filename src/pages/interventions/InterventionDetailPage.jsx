@@ -136,6 +136,12 @@ export default function InterventionDetailPage() {
                     <Button variant="secondary" onClick={() => window.print()}>
                         <Printer className="mr-2 h-4 w-4" /> Imprimer
                     </Button>
+                    <Button
+                        variant="default"
+                        onClick={() => window.open(`${import.meta.env.VITE_API_URL}/invoices/intervention/${id}/download`, '_blank')}
+                    >
+                        <FileText className="mr-2 h-4 w-4" /> Télécharger Facture
+                    </Button>
                 </div>
             </div>
 

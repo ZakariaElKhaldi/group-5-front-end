@@ -92,6 +92,7 @@ export function AuthProvider({ children }) {
 
     const isAdmin = () => user?.roles?.includes('ROLE_ADMIN');
     const isTechnicien = () => user?.roles?.includes('ROLE_TECHNICIEN');
+    const isReceptionist = () => user?.roles?.includes('ROLE_RECEPTIONIST');
     const getTechnicienId = () => user?.technicien?.id || null;
     const getTechnicienStatus = () => user?.technicien?.statut || null;
 
@@ -103,6 +104,7 @@ export function AuthProvider({ children }) {
             loading,
             isAdmin,
             isTechnicien,
+            isReceptionist,
             getTechnicienId,
             getTechnicienStatus,
             updateTechnicienStatus,
