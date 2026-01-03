@@ -28,8 +28,8 @@ export default function PieceFormPage() {
 
     useEffect(() => {
         // Fetch fournisseurs for dropdown
-        api.get('/fournisseurs').then(res => {
-            setFournisseurs(res.data);
+        api.get('/fournisseurs?limit=100').then(res => {
+            setFournisseurs(res.data.items || []);
         }).catch(err => console.error(err));
 
         if (isEditing) {

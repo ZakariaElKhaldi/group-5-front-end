@@ -5,6 +5,7 @@ import {
     LayoutDashboard,
     Wrench,
     Settings2,
+    Settings,
     AlertTriangle,
     Users,
     Building2,
@@ -12,6 +13,8 @@ import {
     ChevronUp,
     Package,
     Truck,
+    User,
+    Calendar,
 } from 'lucide-react';
 import {
     Sidebar,
@@ -42,6 +45,7 @@ const adminNavGroups = [
     {
         title: 'Opérations',
         items: [
+            { name: 'Calendrier', path: '/calendar', icon: Calendar },
             { name: 'Interventions', path: '/interventions', icon: Wrench },
             { name: 'Machines', path: '/machines', icon: Settings2 },
             { name: 'Pannes', path: '/pannes', icon: AlertTriangle },
@@ -61,6 +65,12 @@ const adminNavGroups = [
             { name: 'Clients', path: '/clients', icon: Building2 },
         ],
     },
+    {
+        title: 'Administration',
+        items: [
+            { name: 'Paramètres', path: '/settings', icon: Settings },
+        ],
+    },
 ];
 
 const techNavGroups = [
@@ -68,6 +78,7 @@ const techNavGroups = [
         title: 'Principal',
         items: [
             { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+            { name: 'Calendrier', path: '/calendar', icon: Calendar },
             { name: 'Mes Interventions', path: '/interventions', icon: Wrench },
         ],
     },
@@ -83,6 +94,7 @@ const receptionistNavGroups = [
     {
         title: 'Gestion',
         items: [
+            { name: 'Calendrier', path: '/calendar', icon: Calendar },
             { name: 'Interventions', path: '/interventions', icon: Wrench },
             { name: 'Machines', path: '/machines', icon: Settings2 },
             { name: 'Pannes', path: '/pannes', icon: AlertTriangle },
@@ -173,6 +185,10 @@ export function AppSidebar() {
                                 side="top"
                                 className="w-[--radix-popper-anchor-width]"
                             >
+                                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                                    <User className="w-4 h-4 mr-2" />
+                                    Mon Profil
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleLogout}>
                                     <LogOut className="w-4 h-4 mr-2" />
                                     Déconnexion

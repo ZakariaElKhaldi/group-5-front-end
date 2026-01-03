@@ -4,6 +4,7 @@ import api from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'react-hot-toast';
 
 export default function MachineFormPage() {
@@ -11,22 +12,30 @@ export default function MachineFormPage() {
     const isEditing = !!id;
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [clients, setClients] = useState([]);
 
     const [formData, setFormData] = useState({
         reference: '',
         modele: '',
         dateAchat: '',
         statut: 'En service',
+        clientId: '',
     });
 
     useEffect(() => {
+        // Fetch clients for dropdown
+        api.get('/clients?limit=100').then(res => {
+            setClients(res.data.items || []);
+        }).catch(err => console.error(err));
+
         if (isEditing) {
             api.get(`/machines/${id}`).then(res => {
                 setFormData({
                     reference: res.data.reference,
                     modele: res.data.modele,
                     dateAchat: res.data.dateAchat ? res.data.dateAchat.split('T')[0] : '',
-                    statut: res.data.statut
+                    statut: res.data.statut,
+                    clientId: res.data.client?.id?.toString() || '',
                 });
             }).catch(err => toast.error('Erreur chargement'));
         }
@@ -36,11 +45,15 @@ export default function MachineFormPage() {
         e.preventDefault();
         setLoading(true);
         try {
+            const payload = {
+                ...formData,
+                clientId: formData.clientId ? parseInt(formData.clientId) : null,
+            };
             if (isEditing) {
-                await api.put(`/machines/${id}`, formData);
+                await api.put(`/machines/${id}`, payload);
                 toast.success('Machine mise à jour');
             } else {
-                await api.post('/machines', formData);
+                await api.post('/machines', payload);
                 toast.success('Machine créée');
             }
             navigate('/machines');
@@ -85,6 +98,22 @@ export default function MachineFormPage() {
                                 value={formData.dateAchat}
                                 onChange={(e) => setFormData({ ...formData, dateAchat: e.target.value })}
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Client / Propriétaire</label>
+                            <Select
+                                value={formData.clientId}
+                                onValueChange={(val) => setFormData({ ...formData, clientId: val })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionner un client (optionnel)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {clients.map(c => (
+                                        <SelectItem key={c.id} value={c.id.toString()}>{c.nom}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="flex justify-end pt-4">
                             <Button type="submit" disabled={loading}>{loading ? 'Enregistrement...' : 'Enregistrer'}</Button>

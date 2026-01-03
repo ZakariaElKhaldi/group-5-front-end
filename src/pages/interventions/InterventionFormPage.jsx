@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
 export default function InterventionFormPage() {
     const { id } = useParams();
@@ -43,8 +43,8 @@ export default function InterventionFormPage() {
                     api.get('/machines?limit=100'),
                     api.get('/techniciens?limit=100')
                 ]);
-                setMachines(machinesRes.data);
-                setTechniciens(techsRes.data);
+                setMachines(machinesRes.data.items || []);
+                setTechniciens(techsRes.data.items || []);
 
                 if (isEditing) {
                     const interventionRes = await api.get(`/interventions/${id}`);
@@ -160,11 +160,27 @@ export default function InterventionFormPage() {
                                         <SelectItem value="unassigned">Non assigné</SelectItem>
                                         {techniciens.map((t) => (
                                             <SelectItem key={t.id} value={t.id.toString()}>
-                                                {t.user?.nom} {t.user?.prenom}
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`w-2 h-2 rounded-full ${t.statut === 'Disponible' ? 'bg-green-500' :
+                                                        t.statut === 'En congé' ? 'bg-red-500' : 'bg-amber-500'
+                                                        }`} />
+                                                    {t.user?.nom} {t.user?.prenom}
+                                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                                        ({t.statut})
+                                                    </span>
+                                                </div>
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {formData.technicienId && formData.technicienId !== 'unassigned' && (
+                                    techniciens.find(t => t.id.toString() === formData.technicienId)?.statut !== 'Disponible' && (
+                                        <p className="text-[10px] text-amber-600 font-medium flex items-center gap-1 mt-1 font-mono">
+                                            <AlertTriangle size={12} />
+                                            INDISPONIBLE / OCCUPÉ
+                                        </p>
+                                    )
+                                )}
                             </div>
                         </div>
 

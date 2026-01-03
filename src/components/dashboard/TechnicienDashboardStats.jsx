@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 import {
     Select,
     SelectContent,
@@ -21,8 +22,12 @@ import {
     Wrench,
     User,
     TrendingUp,
+    Euro,
+    Timer,
+    Calendar,
+    Star,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfMonth, isAfter } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export function TechnicienDashboardStats() {
@@ -64,30 +69,68 @@ export function TechnicienDashboardStats() {
         }
     };
 
+    // Calculate stats from interventions
+    const stats = useMemo(() => {
+        const enAttente = myInterventions.filter(i => i.statut === 'En attente').length;
+        const enCours = myInterventions.filter(i => i.statut === 'En cours').length;
+        const terminees = myInterventions.filter(i => i.statut === 'Terminee').length;
+        const total = myInterventions.length;
+
+        // Monthly stats
+        const monthStart = startOfMonth(new Date());
+        const thisMonthInterventions = myInterventions.filter(i =>
+            i.dateDebut && isAfter(new Date(i.dateDebut), monthStart)
+        );
+        const thisMonthCompleted = thisMonthInterventions.filter(i => i.statut === 'Terminee');
+
+        // Calculate total hours worked this month
+        const totalHoursThisMonth = thisMonthCompleted.reduce((acc, i) => {
+            return acc + (i.dureeReelle ? i.dureeReelle / 60 : 0);
+        }, 0);
+
+        // Calculate earnings this month
+        const tauxHoraire = user?.technicien?.tauxHoraire || 0;
+        const earningsThisMonth = totalHoursThisMonth * tauxHoraire;
+
+        // Calculate average duration (in hours)
+        const completedWithDuration = myInterventions.filter(i => i.statut === 'Terminee' && i.dureeReelle);
+        const avgDuration = completedWithDuration.length > 0
+            ? completedWithDuration.reduce((acc, i) => acc + (i.dureeReelle / 60), 0) / completedWithDuration.length
+            : 0;
+
+        return {
+            enAttente,
+            enCours,
+            terminees,
+            total,
+            thisMonthCompleted: thisMonthCompleted.length,
+            totalHoursThisMonth: totalHoursThisMonth.toFixed(1),
+            earningsThisMonth: earningsThisMonth.toFixed(2),
+            avgDuration: avgDuration.toFixed(1),
+            completionRate: total > 0 ? ((terminees / total) * 100).toFixed(0) : 0,
+        };
+    }, [myInterventions, user]);
+
     if (loading) {
         return (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {[...Array(4)].map((_, i) => (
-                    <Card key={i}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <Skeleton className="h-4 w-[100px]" />
-                            <Skeleton className="h-4 w-4 rounded-full" />
-                        </CardHeader>
-                        <CardContent>
-                            <Skeleton className="h-8 w-[60px] mb-1" />
-                            <Skeleton className="h-3 w-[140px]" />
-                        </CardContent>
-                    </Card>
-                ))}
+            <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <Skeleton className="h-4 w-[100px]" />
+                                <Skeleton className="h-4 w-4 rounded-full" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-[60px] mb-1" />
+                                <Skeleton className="h-3 w-[140px]" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             </div>
         );
     }
-
-    // Calculate stats from interventions
-    const enAttente = myInterventions.filter(i => i.statut === 'En attente').length;
-    const enCours = myInterventions.filter(i => i.statut === 'En cours').length;
-    const terminees = myInterventions.filter(i => i.statut === 'Terminee').length;
-    const total = myInterventions.length;
 
     const currentStatus = getTechnicienStatus();
 
@@ -99,6 +142,16 @@ export function TechnicienDashboardStats() {
 
     return (
         <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Mon Tableau de bord</h1>
+                    <p className="text-muted-foreground">
+                        Bienvenue, {user?.prenom || user?.email?.split('@')[0]}
+                    </p>
+                </div>
+            </div>
+
             {/* Status Card */}
             <Card className="bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200">
                 <CardContent className="py-4">
@@ -137,6 +190,43 @@ export function TechnicienDashboardStats() {
                 </CardContent>
             </Card>
 
+            {/* Performance Stats - New Row */}
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-900">
+                        <TrendingUp className="h-5 w-5" />
+                        Mes Performances ce Mois
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center p-4 bg-white/60 rounded-lg">
+                            <CheckCircle className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                            <p className="text-2xl font-bold text-green-700">{stats.thisMonthCompleted}</p>
+                            <p className="text-xs text-muted-foreground">Interventions terminées</p>
+                        </div>
+                        <div className="text-center p-4 bg-white/60 rounded-lg">
+                            <Timer className="h-6 w-6 mx-auto mb-2 text-blue-600" />
+                            <p className="text-2xl font-bold text-blue-700">{stats.totalHoursThisMonth}h</p>
+                            <p className="text-xs text-muted-foreground">Heures travaillées</p>
+                        </div>
+                        <div className="text-center p-4 bg-white/60 rounded-lg">
+                            <Euro className="h-6 w-6 mx-auto mb-2 text-amber-600" />
+                            <p className="text-2xl font-bold text-amber-700">{stats.earningsThisMonth}€</p>
+                            <p className="text-xs text-muted-foreground">Revenus estimés</p>
+                        </div>
+                        <div className="text-center p-4 bg-white/60 rounded-lg">
+                            <Star className="h-6 w-6 mx-auto mb-2 text-purple-600" />
+                            <p className="text-2xl font-bold text-purple-700">{stats.completionRate}%</p>
+                            <p className="text-xs text-muted-foreground">Taux de complétion</p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center mt-4">
+                        Taux horaire: {user?.technicien?.tauxHoraire || 0}€/h • Durée moyenne: {stats.avgDuration}h
+                    </p>
+                </CardContent>
+            </Card>
+
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/interventions?statut=En attente')}>
@@ -145,7 +235,7 @@ export function TechnicienDashboardStats() {
                         <Clock className="h-4 w-4 text-amber-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-amber-600">{enAttente}</div>
+                        <div className="text-2xl font-bold text-amber-600">{stats.enAttente}</div>
                         <p className="text-xs text-muted-foreground">À réaliser</p>
                     </CardContent>
                 </Card>
@@ -156,7 +246,7 @@ export function TechnicienDashboardStats() {
                         <PlayCircle className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">{enCours}</div>
+                        <div className="text-2xl font-bold text-blue-600">{stats.enCours}</div>
                         <p className="text-xs text-muted-foreground">Actuellement actives</p>
                     </CardContent>
                 </Card>
@@ -167,7 +257,7 @@ export function TechnicienDashboardStats() {
                         <CheckCircle className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{terminees}</div>
+                        <div className="text-2xl font-bold text-green-600">{stats.terminees}</div>
                         <p className="text-xs text-muted-foreground">Complétées</p>
                     </CardContent>
                 </Card>
@@ -178,7 +268,7 @@ export function TechnicienDashboardStats() {
                         <Wrench className="h-4 w-4 text-slate-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{total}</div>
+                        <div className="text-2xl font-bold">{stats.total}</div>
                         <p className="text-xs text-muted-foreground">
                             Taux: {user?.technicien?.tauxHoraire || 0}€/h
                         </p>
@@ -187,7 +277,7 @@ export function TechnicienDashboardStats() {
             </div>
 
             {/* Recent/Urgent Interventions */}
-            {(enAttente > 0 || enCours > 0) && (
+            {(stats.enAttente > 0 || stats.enCours > 0) && (
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
@@ -241,6 +331,38 @@ export function TechnicienDashboardStats() {
                                     Aucune intervention active
                                 </p>
                             )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Upcoming Scheduled Interventions */}
+            {myInterventions.filter(i => i.statut === 'En attente' && i.dateFinPrevue).length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            Prochaines Interventions Planifiées
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-2">
+                            {myInterventions
+                                .filter(i => i.statut === 'En attente' && i.dateFinPrevue)
+                                .sort((a, b) => new Date(a.dateFinPrevue) - new Date(b.dateFinPrevue))
+                                .slice(0, 3)
+                                .map((intervention) => (
+                                    <div
+                                        key={intervention.id}
+                                        className="flex items-center justify-between p-2 hover:bg-slate-50 rounded cursor-pointer"
+                                        onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                    >
+                                        <span className="text-sm">{intervention.machine?.modele}</span>
+                                        <Badge variant="outline">
+                                            {format(new Date(intervention.dateFinPrevue), 'dd MMM yyyy', { locale: fr })}
+                                        </Badge>
+                                    </div>
+                                ))}
                         </div>
                     </CardContent>
                 </Card>

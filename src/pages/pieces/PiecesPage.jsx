@@ -17,16 +17,33 @@ import { toast } from 'react-hot-toast';
 
 export default function PiecesPage() {
     const [pieces, setPieces] = useState([]);
+    const [pagination, setPagination] = useState({ total: 0, page: 1, totalPages: 0 });
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
+    const [filters, setFilters] = useState({ page: 1, limit: 10, search: '' });
     const [showLowStock, setShowLowStock] = useState(false);
     const navigate = useNavigate();
 
     const fetchPieces = async () => {
+        setLoading(true);
         try {
-            const url = showLowStock ? '/pieces/low-stock' : `/pieces${search ? `?search=${search}` : ''}`;
-            const response = await api.get(url);
-            setPieces(response.data);
+            if (showLowStock) {
+                const response = await api.get('/pieces/low-stock');
+                setPieces(response.data);
+                setPagination({ total: response.data.length, page: 1, totalPages: 1 });
+            } else {
+                const params = new URLSearchParams({
+                    page: filters.page,
+                    limit: filters.limit,
+                    search: filters.search
+                });
+                const response = await api.get(`/pieces?${params.toString()}`);
+                setPieces(response.data.items || []);
+                setPagination({
+                    total: response.data.total,
+                    page: response.data.page,
+                    totalPages: response.data.totalPages
+                });
+            }
         } catch (error) {
             console.error(error);
             toast.error('Erreur chargement pièces');
@@ -36,26 +53,24 @@ export default function PiecesPage() {
     };
 
     useEffect(() => {
-        fetchPieces();
-    }, [showLowStock]);
+        const timer = setTimeout(() => fetchPieces(), 300);
+        return () => clearTimeout(timer);
+    }, [filters, showLowStock]);
 
-    const handleSearch = (e) => {
-        e.preventDefault();
-        fetchPieces();
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value, page: key === 'page' ? value : 1 }));
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Voulez-vous vraiment supprimer cette pièce ?')) return;
         try {
             await api.delete(`/pieces/${id}`);
-            setPieces(pieces.filter(p => p.id !== id));
+            fetchPieces();
             toast.success('Pièce supprimée');
         } catch (error) {
             toast.error(error.response?.data?.error || 'Erreur lors de la suppression');
         }
     };
-
-    const lowStockCount = pieces.filter(p => p.isLowStock).length;
 
     return (
         <div className="space-y-6">
@@ -73,23 +88,23 @@ export default function PiecesPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex items-center gap-4">
-                <form onSubmit={handleSearch} className="flex gap-2 flex-1 max-w-md">
+            <div className="flex items-center gap-4 bg-card p-4 rounded-lg border">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Rechercher par référence ou nom..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        className="pl-8"
+                        value={filters.search}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                        disabled={showLowStock}
                     />
-                    <Button type="submit" variant="secondary">
-                        <Search className="h-4 w-4" />
-                    </Button>
-                </form>
+                </div>
                 <Button
                     variant={showLowStock ? "destructive" : "outline"}
                     onClick={() => setShowLowStock(!showLowStock)}
                 >
                     <AlertTriangle className="mr-2 h-4 w-4" />
-                    Stock faible {lowStockCount > 0 && `(${lowStockCount})`}
+                    Stock faible
                 </Button>
             </div>
 
@@ -141,6 +156,37 @@ export default function PiecesPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {!showLowStock && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                        Total: <span className="font-medium text-foreground">{pagination.total}</span> pièces
+                    </p>
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm text-muted-foreground">
+                            Page <span className="font-medium text-foreground">{pagination.page}</span> sur {pagination.totalPages || 1}
+                        </span>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleFilterChange('page', Math.max(1, filters.page - 1))}
+                                disabled={filters.page === 1 || loading}
+                            >
+                                Précédent
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleFilterChange('page', filters.page + 1)}
+                                disabled={filters.page >= pagination.totalPages || loading}
+                            >
+                                Suivant
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
