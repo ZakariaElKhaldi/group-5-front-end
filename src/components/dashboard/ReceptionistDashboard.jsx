@@ -44,22 +44,20 @@ export function ReceptionistDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [pannesRes, interventionsRes, clientsRes, machinesRes] = await Promise.all([
-                    api.get('/pannes'),
-                    api.get('/interventions?statut=En attente'),
+                const [workordersRes, clientsRes, machinesRes] = await Promise.all([
+                    api.get('/workorders?limit=100'),
                     api.get('/clients'),
                     api.get('/machines'),
                 ]);
 
-                setRecentPannes(Array.isArray(pannesRes.data) ? pannesRes.data.slice(0, 5) : (pannesRes.data.items || []).slice(0, 5));
-                setTodayInterventions(interventionsRes.data.items?.slice(0, 5) || []);
+                const workorders = workordersRes.data.items || [];
+                setRecentPannes(workorders.filter(wo => wo.priority === 'urgent' || wo.priority === 'high').slice(0, 5));
+                setTodayInterventions(workorders.filter(wo => wo.status === 'reported' || wo.status === 'assigned').slice(0, 5));
                 setStats({
                     clients: Array.isArray(clientsRes.data) ? clientsRes.data.length : (clientsRes.data.total || 0),
                     machines: machinesRes.data.total || 0,
-                    openPannes: Array.isArray(pannesRes.data)
-                        ? pannesRes.data.filter(p => p.statut !== 'Resolue').length
-                        : (pannesRes.data.items || []).filter(p => p.statut !== 'Resolue').length,
-                    pendingInterventions: interventionsRes.data.total || 0,
+                    openPannes: workorders.filter(wo => wo.status !== 'completed' && wo.status !== 'cancelled').length,
+                    pendingInterventions: workorders.filter(wo => wo.status === 'reported').length,
                 });
             } catch (error) {
                 console.error('Failed to fetch dashboard data:', error);
@@ -203,7 +201,7 @@ export function ReceptionistDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/interventions')}>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/workorders')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Interventions</CardTitle>
                         <Wrench className="h-4 w-4 text-green-500" />
@@ -312,7 +310,7 @@ export function ReceptionistDashboard() {
                             <AlertTriangle className="h-5 w-5 text-amber-500" />
                             Pannes Récentes
                         </CardTitle>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/pannes')}>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/workorders?priority=urgent')}>
                             Voir tout <ArrowRight className="ml-1 h-4 w-4" />
                         </Button>
                     </CardHeader>
@@ -364,7 +362,7 @@ export function ReceptionistDashboard() {
                         <Clock className="h-5 w-5 text-blue-500" />
                         Interventions en Attente
                     </CardTitle>
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/interventions')}>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/workorders')}>
                         Voir tout <ArrowRight className="ml-1 h-4 w-4" />
                     </Button>
                 </CardHeader>
@@ -404,7 +402,7 @@ export function ReceptionistDashboard() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                                onClick={() => navigate(`/workorders/${intervention.id}`)}
                                             >
                                                 Détails
                                             </Button>

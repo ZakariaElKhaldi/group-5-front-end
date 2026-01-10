@@ -15,6 +15,10 @@ import {
     Truck,
     User,
     Calendar,
+    ClipboardList,
+    Shield,
+    Clock,
+    Bell,
 } from 'lucide-react';
 import {
     Sidebar,
@@ -46,15 +50,15 @@ const adminNavGroups = [
         title: 'Opérations',
         items: [
             { name: 'Calendrier', path: '/calendar', icon: Calendar },
-            { name: 'Interventions', path: '/interventions', icon: Wrench },
+            { name: 'Ordres de travail', path: '/workorders', icon: ClipboardList },
             { name: 'Machines', path: '/machines', icon: Settings2 },
-            { name: 'Pannes', path: '/pannes', icon: AlertTriangle },
         ],
     },
     {
         title: 'Inventaire',
         items: [
             { name: 'Pièces', path: '/pieces', icon: Package },
+            { name: 'Historique Stock', path: '/stock-history', icon: Clock },
             { name: 'Fournisseurs', path: '/fournisseurs', icon: Truck },
         ],
     },
@@ -68,6 +72,9 @@ const adminNavGroups = [
     {
         title: 'Administration',
         items: [
+            { name: 'Utilisateurs', path: '/users', icon: User },
+            { name: 'Rôles', path: '/roles', icon: Shield },
+            { name: 'Notifications', path: '/notifications-admin', icon: Bell },
             { name: 'Paramètres', path: '/settings', icon: Settings },
         ],
     },
@@ -79,7 +86,7 @@ const techNavGroups = [
         items: [
             { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
             { name: 'Calendrier', path: '/calendar', icon: Calendar },
-            { name: 'Mes Interventions', path: '/interventions', icon: Wrench },
+            { name: 'Mes Ordres', path: '/workorders', icon: ClipboardList },
         ],
     },
 ];
@@ -95,9 +102,8 @@ const receptionistNavGroups = [
         title: 'Gestion',
         items: [
             { name: 'Calendrier', path: '/calendar', icon: Calendar },
-            { name: 'Interventions', path: '/interventions', icon: Wrench },
+            { name: 'Ordres de travail', path: '/workorders', icon: ClipboardList },
             { name: 'Machines', path: '/machines', icon: Settings2 },
-            { name: 'Pannes', path: '/pannes', icon: AlertTriangle },
             { name: 'Clients', path: '/clients', icon: Building2 },
         ],
     },

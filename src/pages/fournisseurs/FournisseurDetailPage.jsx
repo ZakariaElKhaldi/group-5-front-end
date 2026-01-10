@@ -53,7 +53,8 @@ export default function FournisseurDetailPage() {
 
                 // Fetch pieces supplied by this fournisseur
                 const pRes = await api.get('/pieces?limit=100');
-                const fournisseurPieces = (pRes.data || []).filter(
+                const allPieces = pRes.data?.items || pRes.data || [];
+                const fournisseurPieces = allPieces.filter(
                     p => p.fournisseur?.id === parseInt(id)
                 );
                 setPieces(fournisseurPieces);

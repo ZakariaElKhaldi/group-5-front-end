@@ -59,6 +59,18 @@ export function NotificationBell() {
         }
     };
 
+    const markAllAsRead = async () => {
+        try {
+            await api.post('/notifications/read-all');
+            setNotifications([]);
+            setUnreadCount(0);
+            toast.success('Toutes les notifications marquées comme lues');
+        } catch (error) {
+            console.error('Failed to mark all as read:', error);
+            toast.error('Erreur lors du marquage');
+        }
+    };
+
     const getTypeIcon = (type) => {
         switch (type) {
             case 'urgent': return <AlertTriangle className="h-4 w-4 text-red-500" />;
@@ -124,7 +136,10 @@ export function NotificationBell() {
                 {notifications.length > 0 && (
                     <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="w-full text-center text-xs text-muted-foreground justify-center cursor-pointer">
+                        <DropdownMenuItem
+                            className="w-full text-center text-xs text-muted-foreground justify-center cursor-pointer"
+                            onClick={markAllAsRead}
+                        >
                             Tout marquer comme lu
                         </DropdownMenuItem>
                     </>

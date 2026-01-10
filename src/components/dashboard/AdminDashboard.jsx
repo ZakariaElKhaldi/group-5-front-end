@@ -67,33 +67,35 @@ export function AdminDashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [statsRes, chartsRes, techniciensRes, piecesRes, allInterventionsRes] = await Promise.all([
+                const [statsRes, chartsRes, techniciensRes, piecesRes, workordersRes] = await Promise.all([
                     api.get(`/dashboard/stats?period=${comparisonPeriod}`),
                     api.get('/dashboard/charts'),
                     api.get('/techniciens'),
                     api.get('/pieces/low-stock').catch(() => ({ data: [] })),
-                    api.get('/interventions'),
+                    api.get('/workorders?limit=500').catch(() => ({ data: { items: [] } })),
                 ]);
 
                 setStats(statsRes.data);
                 setChartData(chartsRes.data);
-                setAllInterventions(allInterventionsRes.data.items || []);
+                // Use workorders data for activity heatmap
+                const workorders = workordersRes.data.items || workordersRes.data || [];
+                setAllInterventions(workorders);
 
                 // Process technician data for comparison chart
                 const technicians = techniciensRes.data.items || [];
                 const techData = await Promise.all(
                     technicians.map(async (tech) => {
                         try {
-                            const interventions = await api.get(`/techniciens/${tech.id}/interventions`);
-                            const completed = interventions.data.filter(i => i.statut === 'Terminee').length;
-                            const inProgress = interventions.data.filter(i => i.statut === 'En cours').length;
-                            const pending = interventions.data.filter(i => i.statut === 'En attente').length;
+                            const workordersData = await api.get(`/techniciens/${tech.id}/workorders`);
+                            const completed = workordersData.data.filter(i => i.statut === 'Terminee').length;
+                            const inProgress = workordersData.data.filter(i => i.statut === 'En cours').length;
+                            const pending = workordersData.data.filter(i => i.statut === 'En attente').length;
                             return {
                                 name: `${tech.user?.prenom || ''} ${tech.user?.nom || ''}`.trim() || 'Inconnu',
                                 completed,
                                 inProgress,
                                 pending,
-                                total: interventions.data.length,
+                                total: workordersData.data.length,
                             };
                         } catch {
                             return null;
@@ -104,12 +106,10 @@ export function AdminDashboard() {
 
                 setLowStockPieces(piecesRes.data.slice(0, 5));
 
-                // Get pending validations
-                const interventionsRes = await api.get('/interventions?statut=Terminee&limit=50');
-                const pending = (interventionsRes.data.items || []).filter(
-                    i => !i.confirmationTechnicien || !i.confirmationClient
-                );
-                setPendingValidations(pending.slice(0, 5));
+                // Get pending validations (completed workorders needing confirmation)
+                const completedWoRes = await api.get('/workorders?status=completed&limit=50');
+                const completedItems = completedWoRes.data.items || [];
+                setPendingValidations(completedItems.slice(0, 5));
 
             } catch (error) {
                 console.error('Failed to fetch dashboard data:', error);
@@ -210,7 +210,7 @@ export function AdminDashboard() {
 
             {/* Key Metrics with Comparison */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/interventions')}>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/workorders')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Interventions</CardTitle>
                         <FileText className="h-4 w-4 text-blue-500" />
@@ -231,7 +231,7 @@ export function AdminDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/interventions?priorite=Urgente')}>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/workorders?priority=urgent')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Urgentes</CardTitle>
                         <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -427,7 +427,7 @@ export function AdminDashboard() {
                             <Clock className="h-5 w-5 text-blue-500" />
                             Validations en Attente
                         </CardTitle>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/interventions?statut=Terminee')}>
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/workorders?status=completed')}>
                             Voir tout <ArrowRight className="ml-1 h-4 w-4" />
                         </Button>
                     </CardHeader>
@@ -448,7 +448,7 @@ export function AdminDashboard() {
                                 </TableHeader>
                                 <TableBody>
                                     {pendingValidations.map((intervention) => (
-                                        <TableRow key={intervention.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/interventions/${intervention.id}`)}>
+                                        <TableRow key={intervention.id} className="cursor-pointer hover:bg-slate-50" onClick={() => navigate(`/workorders/${intervention.id}`)}>
                                             <TableCell className="font-medium">#{intervention.id}</TableCell>
                                             <TableCell>
                                                 {intervention.confirmationTechnicien ? (

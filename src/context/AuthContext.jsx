@@ -19,6 +19,8 @@ export function AuthProvider({ children }) {
                 nom: data.nom,
                 prenom: data.prenom,
                 roles: data.roles,
+                role: data.role, // NEW: dynamic role object with permissions
+                permissions: data.role?.permissions || [], // NEW: flat permissions array
                 technicien: data.technicien, // Contains id, specialite, tauxHoraire, statut
             });
         } catch (error) {
@@ -96,6 +98,18 @@ export function AuthProvider({ children }) {
     const getTechnicienId = () => user?.technicien?.id || null;
     const getTechnicienStatus = () => user?.technicien?.statut || null;
 
+    // NEW: Permission-based access control
+    const hasPermission = (permission) => {
+        if (!user || !user.permissions) return false;
+        // Wildcard permission grants access to everything
+        if (user.permissions.includes('*')) return true;
+        // Check for specific permission
+        return user.permissions.includes(permission);
+    };
+
+    // NEW: Get all permissions for current user
+    const getPermissions = () => user?.permissions || [];
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -109,6 +123,8 @@ export function AuthProvider({ children }) {
             getTechnicienStatus,
             updateTechnicienStatus,
             fetchUserProfile,
+            hasPermission, // NEW
+            getPermissions, // NEW
         }}>
             {children}
         </AuthContext.Provider>

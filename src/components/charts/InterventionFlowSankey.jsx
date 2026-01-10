@@ -1,9 +1,60 @@
-import { ResponsiveSankey } from '@nivo/sankey';
+import { Sankey, Tooltip, Layer, Rectangle } from 'recharts';
 
 /**
- * Intervention Flow Sankey - Shows flow from status to status or priority to type
- * Data format: { nodes: [{ id: "..." }], links: [{ source: "...", target: "...", value: N }] }
+ * Intervention Flow Sankey - Shows flow from priority to type to status
+ * Simplified implementation using Recharts Sankey
  */
+
+// Custom node component
+function SankeyNode({ x, y, width, height, index, payload }) {
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316'];
+    return (
+        <Layer key={`sankey-node-${index}`}>
+            <Rectangle
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill={colors[index % colors.length]}
+                fillOpacity="0.9"
+                rx={3}
+                ry={3}
+            />
+            <text
+                x={x < 200 ? x - 6 : x + width + 6}
+                y={y + height / 2}
+                textAnchor={x < 200 ? 'end' : 'start'}
+                dominantBaseline="middle"
+                className="text-xs fill-slate-600"
+            >
+                {payload.name} ({payload.value || 0})
+            </text>
+        </Layer>
+    );
+}
+
+// Custom link component
+function SankeyLink({ sourceX, targetX, sourceY, targetY, sourceControlX, targetControlX, linkWidth, index }) {
+    const gradientId = `sankeyGradient${index}`;
+    return (
+        <Layer key={`sankey-link-${index}`}>
+            <defs>
+                <linearGradient id={gradientId}>
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.4} />
+                </linearGradient>
+            </defs>
+            <path
+                d={`M${sourceX},${sourceY}C${sourceControlX},${sourceY} ${targetControlX},${targetY} ${targetX},${targetY}`}
+                fill="none"
+                stroke={`url(#${gradientId})`}
+                strokeWidth={linkWidth}
+                strokeOpacity={0.5}
+            />
+        </Layer>
+    );
+}
+
 export function InterventionFlowSankey({ data }) {
     if (!data || !data.nodes || data.nodes.length === 0) {
         return (
@@ -13,50 +64,30 @@ export function InterventionFlowSankey({ data }) {
         );
     }
 
+    // Convert data format for Recharts Sankey
+    const sankeyData = {
+        nodes: data.nodes.map((n, i) => ({ name: n.id })),
+        links: data.links.map(l => ({
+            source: data.nodes.findIndex(n => n.id === l.source),
+            target: data.nodes.findIndex(n => n.id === l.target),
+            value: l.value
+        })).filter(l => l.source !== -1 && l.target !== -1)
+    };
+
     return (
-        <ResponsiveSankey
-            data={data}
-            margin={{ top: 20, right: 160, bottom: 20, left: 50 }}
-            align="justify"
-            colors={{ scheme: 'category10' }}
-            nodeOpacity={1}
-            nodeHoverOthersOpacity={0.35}
-            nodeThickness={18}
-            nodeSpacing={24}
-            nodeBorderWidth={0}
-            nodeBorderRadius={3}
-            linkOpacity={0.5}
-            linkHoverOthersOpacity={0.1}
-            linkContract={3}
-            enableLinkGradient={true}
-            labelPosition="outside"
-            labelOrientation="horizontal"
-            labelPadding={16}
-            labelTextColor={{
-                from: 'color',
-                modifiers: [['darker', 1]]
-            }}
-            legends={[
-                {
-                    anchor: 'bottom-right',
-                    direction: 'column',
-                    translateX: 130,
-                    itemWidth: 100,
-                    itemHeight: 14,
-                    itemDirection: 'left-to-right',
-                    itemsSpacing: 2,
-                    itemTextColor: '#64748b',
-                    symbolSize: 12,
-                    symbolShape: 'circle'
-                }
-            ]}
-            tooltip={({ link }) => (
-                <div className="bg-white px-3 py-2 rounded-lg shadow-lg border text-sm">
-                    <strong>{link.source.id}</strong> → <strong>{link.target.id}</strong><br />
-                    {link.value} intervention{link.value > 1 ? 's' : ''}
-                </div>
-            )}
-        />
+        <div className="w-full h-full">
+            <Sankey
+                width={500}
+                height={300}
+                data={sankeyData}
+                node={<SankeyNode />}
+                link={<SankeyLink />}
+                nodePadding={40}
+                margin={{ left: 80, right: 80, top: 20, bottom: 20 }}
+            >
+                <Tooltip />
+            </Sankey>
+        </div>
     );
 }
 

@@ -8,6 +8,8 @@ import { ArrowLeft, QrCode, Printer, Edit, FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import MachineQrCode from '@/components/machines/MachineQrCode';
+import MachineImageGallery from '@/components/machines/MachineImageGallery';
 
 export default function MachineDetailPage() {
     const { id } = useParams();
@@ -15,19 +17,20 @@ export default function MachineDetailPage() {
     const [machine, setMachine] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const fetchMachine = async () => {
+        try {
+            const response = await api.get(`/machines/${id}`);
+            setMachine(response.data);
+        } catch (error) {
+            console.error('Error:', error);
+            toast.error('Erreur lors du chargement');
+            navigate('/machines');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchMachine = async () => {
-            try {
-                const response = await api.get(`/machines/${id}`);
-                setMachine(response.data);
-            } catch (error) {
-                console.error('Error:', error);
-                toast.error('Erreur lors du chargement');
-                navigate('/machines');
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchMachine();
     }, [id]);
 
@@ -74,12 +77,6 @@ export default function MachineDetailPage() {
                     <Button variant="outline" onClick={() => navigate(`/machines/${id}/edit`)}>
                         <Edit className="mr-2 h-4 w-4" /> Modifier
                     </Button>
-                    <Button
-                        variant="secondary"
-                        onClick={() => window.open(`${import.meta.env.VITE_API_URL}/qr/machine/${id}/label`, '_blank')}
-                    >
-                        <QrCode className="mr-2 h-4 w-4" /> Imprimer Étiquette QR
-                    </Button>
                 </div>
             </div>
 
@@ -123,25 +120,13 @@ export default function MachineDetailPage() {
                     </CardContent>
                 </Card>
 
-                {/* QR Code Preview */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <QrCode className="h-5 w-5" />
-                            Code QR
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col items-center justify-center">
-                        <img
-                            src={`${import.meta.env.VITE_API_URL}/qr/machine/${id}`}
-                            alt="QR Code"
-                            className="w-48 h-48 border rounded-lg"
-                        />
-                        <p className="text-sm text-muted-foreground mt-2">
-                            Scannez pour identifier la machine
-                        </p>
-                    </CardContent>
-                </Card>
+                {/* QR Code */}
+                <MachineQrCode machine={machine} />
+
+                {/* Image Gallery */}
+                <div className="md:col-span-2">
+                    <MachineImageGallery machine={machine} onUpdate={fetchMachine} />
+                </div>
             </div>
         </div>
     );

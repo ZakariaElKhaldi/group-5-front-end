@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
     ChevronLeft,
     ChevronRight,
@@ -24,30 +25,44 @@ import {
     isToday
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { PriorityBadge } from '@/components/interventions/Badges';
 import { cn } from '@/lib/utils';
+
+// Priority badge component (moved from deleted Badges.jsx)
+function PriorityBadge({ priority }) {
+    const variants = {
+        'urgent': 'bg-red-100 text-red-700 border-red-200',
+        'high': 'bg-amber-100 text-amber-700 border-amber-200',
+        'normal': 'bg-blue-100 text-blue-700 border-blue-200',
+        'low': 'bg-gray-100 text-gray-700 border-gray-200',
+    };
+    return (
+        <span className={cn("text-[10px] px-1.5 py-0.5 rounded border font-medium", variants[priority] || variants.normal)}>
+            {priority}
+        </span>
+    );
+}
 
 export default function CalendarPage() {
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [interventions, setInterventions] = useState([]);
+    const [workorders, setWorkorders] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    const fetchInterventions = async () => {
+    const fetchWorkorders = async () => {
         setLoading(true);
         try {
-            // Fetch more items for calendar view
-            const response = await api.get('/interventions?limit=500');
-            setInterventions(response.data.items || []);
+            // Fetch work orders for calendar view
+            const response = await api.get('/workorders?limit=500');
+            setWorkorders(response.data.items || response.data || []);
         } catch (error) {
-            console.error('Failed to fetch interventions:', error);
+            console.error('Failed to fetch workorders:', error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchInterventions();
+        fetchWorkorders();
     }, []);
 
     const renderHeader = () => {
@@ -61,7 +76,7 @@ export default function CalendarPage() {
                         <h1 className="text-3xl font-bold tracking-tight capitalize">
                             {format(currentMonth, 'MMMM yyyy', { locale: fr })}
                         </h1>
-                        <p className="text-muted-foreground">Planning des interventions</p>
+                        <p className="text-muted-foreground">Planning des ordres de travail</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -90,7 +105,7 @@ export default function CalendarPage() {
                             <ChevronRight className="h-5 w-5" />
                         </Button>
                     </div>
-                    <Button onClick={() => navigate('/interventions/new')}>
+                    <Button onClick={() => navigate('/workorders/new')}>
                         <Plus className="mr-2 h-4 w-4" /> Nouvelle
                     </Button>
                 </div>
@@ -126,9 +141,10 @@ export default function CalendarPage() {
             for (let i = 0; i < 7; i++) {
                 formattedDate = format(day, "d");
                 const cloneDay = day;
-                const dayInterventions = interventions.filter(item =>
-                    isSameDay(parseISO(item.dateDebut), cloneDay)
-                );
+                const dayWorkorders = workorders.filter(item => {
+                    const scheduledDate = item.scheduledDate || item.dateDebut;
+                    return scheduledDate && isSameDay(parseISO(scheduledDate), cloneDay);
+                });
 
                 days.push(
                     <div
@@ -146,29 +162,29 @@ export default function CalendarPage() {
                             )}>
                                 {formattedDate}
                             </span>
-                            {dayInterventions.length > 0 && (
+                            {dayWorkorders.length > 0 && (
                                 <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">
-                                    {dayInterventions.length} {dayInterventions.length === 1 ? 'INT' : 'INT'}
+                                    {dayWorkorders.length} OT
                                 </span>
                             )}
                         </div>
                         <div className="space-y-1 overflow-y-auto max-h-[100px] scrollbar-hide">
-                            {dayInterventions.map((int) => (
+                            {dayWorkorders.map((wo) => (
                                 <div
-                                    key={int.id}
-                                    onClick={() => navigate(`/interventions/${int.id}`)}
+                                    key={wo.id}
+                                    onClick={() => navigate(`/workorders/${wo.id}`)}
                                     className={cn(
                                         "text-[10px] p-1.5 rounded-md border flex flex-col gap-0.5 cursor-pointer shadow-sm transition-transform active:scale-95",
-                                        int.priorite === 'Urgente' ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100" :
-                                            int.priorite === 'Elevee' ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100" :
+                                        wo.priority === 'urgent' ? "bg-red-50 border-red-200 text-red-700 hover:bg-red-100" :
+                                            wo.priority === 'high' ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100" :
                                                 "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                                     )}
                                 >
                                     <div className="font-bold flex justify-between items-center truncate">
-                                        <span>#{int.id} - {int.machine?.modele || 'MCH'}</span>
+                                        <span>#{wo.id} - {wo.machine?.modele || 'Machine'}</span>
                                         <Clock size={8} />
                                     </div>
-                                    <span className="truncate opacity-80">{int.description || 'Intervention...'}</span>
+                                    <span className="truncate opacity-80">{wo.title || wo.description || 'Ordre de travail'}</span>
                                 </div>
                             ))}
                         </div>
@@ -218,3 +234,4 @@ export default function CalendarPage() {
         </div>
     );
 }
+

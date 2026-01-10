@@ -1,5 +1,8 @@
-import { ResponsiveLine } from '@nivo/line';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 
+/**
+ * CostsTrendLine - Shows costs trend over time using Recharts
+ */
 export function CostsTrendLine({ data }) {
     if (!data || data.length === 0) {
         return (
@@ -9,93 +12,67 @@ export function CostsTrendLine({ data }) {
         );
     }
 
-    // Transform data for Nivo line chart
-    const lineData = [
-        {
-            id: 'Coûts',
-            data: data.map(item => ({
-                x: item.month,
-                y: item.total || 0
-            }))
+    // Transform data for Recharts
+    const chartData = data.map(item => ({
+        month: item.month,
+        total: item.total || 0
+    }));
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-white px-3 py-2 rounded-lg shadow-lg border text-sm">
+                    <strong>{label}</strong>: {payload[0].value.toFixed(2)}€
+                </div>
+            );
         }
-    ];
+        return null;
+    };
 
     return (
-        <ResponsiveLine
-            data={lineData}
-            margin={{ top: 20, right: 20, bottom: 50, left: 60 }}
-            xScale={{ type: 'point' }}
-            yScale={{
-                type: 'linear',
-                min: 0,
-                max: 'auto',
-                stacked: false,
-                reverse: false
-            }}
-            curve="monotoneX"
-            axisTop={null}
-            axisRight={null}
-            axisBottom={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: -45,
-                legend: '',
-                legendOffset: 36,
-                legendPosition: 'middle',
-                truncateTickAt: 0
-            }}
-            axisLeft={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: 0,
-                legend: 'Coûts (€)',
-                legendOffset: -50,
-                legendPosition: 'middle',
-                truncateTickAt: 0,
-                format: v => `${v}€`
-            }}
-            colors={['#10b981']}
-            lineWidth={3}
-            pointSize={8}
-            pointColor="#ffffff"
-            pointBorderWidth={2}
-            pointBorderColor={{ from: 'serieColor' }}
-            enableArea={true}
-            areaOpacity={0.1}
-            useMesh={true}
-            theme={{
-                axis: {
-                    ticks: {
-                        text: {
-                            fill: '#64748b',
-                            fontSize: 11
-                        }
-                    },
-                    legend: {
-                        text: {
-                            fill: '#64748b',
-                            fontSize: 12
-                        }
-                    }
-                },
-                grid: {
-                    line: {
-                        stroke: '#e2e8f0'
-                    }
-                },
-                crosshair: {
-                    line: {
-                        stroke: '#3b82f6',
-                        strokeWidth: 1,
-                        strokeOpacity: 0.5
-                    }
-                }
-            }}
-            tooltip={({ point }) => (
-                <div className="bg-white px-3 py-2 rounded-lg shadow-lg border text-sm">
-                    <strong>{point.data.x}</strong>: {point.data.y.toFixed(2)}€
-                </div>
-            )}
-        />
+        <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 20, right: 20, bottom: 50, left: 60 }}>
+                <defs>
+                    <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis
+                    dataKey="month"
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                />
+                <YAxis
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
+                    tickFormatter={(value) => `${value}€`}
+                    label={{
+                        value: 'Coûts (€)',
+                        angle: -90,
+                        position: 'insideLeft',
+                        offset: -45,
+                        style: { fill: '#64748b', fontSize: 12 }
+                    }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                    type="monotone"
+                    dataKey="total"
+                    stroke="#10b981"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorCost)"
+                    dot={{ fill: '#ffffff', stroke: '#10b981', strokeWidth: 2, r: 4 }}
+                    activeDot={{ fill: '#10b981', stroke: '#ffffff', strokeWidth: 2, r: 6 }}
+                />
+            </AreaChart>
+        </ResponsiveContainer>
     );
 }

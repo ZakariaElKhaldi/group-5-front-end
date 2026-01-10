@@ -46,7 +46,7 @@ export function TechnicienDashboardStats() {
                 return;
             }
             try {
-                const response = await api.get(`/techniciens/${technicienId}/interventions`);
+                const response = await api.get(`/techniciens/${technicienId}/workorders`);
                 setMyInterventions(response.data);
             } catch (error) {
                 console.error('Failed to fetch interventions:', error);
@@ -229,7 +229,7 @@ export function TechnicienDashboardStats() {
 
             {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/interventions?statut=En attente')}>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/workorders?status=reported')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">En attente</CardTitle>
                         <Clock className="h-4 w-4 text-amber-500" />
@@ -240,7 +240,7 @@ export function TechnicienDashboardStats() {
                     </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/interventions?statut=En cours')}>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/workorders?status=in_progress')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">En cours</CardTitle>
                         <PlayCircle className="h-4 w-4 text-blue-500" />
@@ -251,7 +251,7 @@ export function TechnicienDashboardStats() {
                     </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/interventions?statut=Terminee')}>
+                <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/workorders?status=completed')}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Terminées</CardTitle>
                         <CheckCircle className="h-4 w-4 text-green-500" />
@@ -294,7 +294,7 @@ export function TechnicienDashboardStats() {
                                     <div
                                         key={intervention.id}
                                         className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors"
-                                        onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                        onClick={() => navigate(`/workorders/${intervention.id}`)}
                                     >
                                         <div className="flex items-center gap-3">
                                             <Badge
@@ -355,7 +355,7 @@ export function TechnicienDashboardStats() {
                                     <div
                                         key={intervention.id}
                                         className="flex items-center justify-between p-2 hover:bg-slate-50 rounded cursor-pointer"
-                                        onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                        onClick={() => navigate(`/workorders/${intervention.id}`)}
                                     >
                                         <span className="text-sm">{intervention.machine?.modele}</span>
                                         <Badge variant="outline">

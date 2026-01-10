@@ -1,5 +1,8 @@
-import { ResponsiveBar } from '@nivo/bar';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+/**
+ * InterventionsBarChart - Shows interventions count by month using Recharts
+ */
 export function InterventionsBarChart({ data }) {
     if (!data || data.length === 0) {
         return (
@@ -9,64 +12,49 @@ export function InterventionsBarChart({ data }) {
         );
     }
 
-    return (
-        <ResponsiveBar
-            data={data}
-            keys={['count']}
-            indexBy="month"
-            margin={{ top: 10, right: 10, bottom: 50, left: 50 }}
-            padding={0.3}
-            valueScale={{ type: 'linear' }}
-            indexScale={{ type: 'band', round: true }}
-            colors={['#3b82f6']}
-            borderRadius={4}
-            axisTop={null}
-            axisRight={null}
-            axisBottom={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: -45,
-                legend: '',
-                legendPosition: 'middle',
-                legendOffset: 32,
-                truncateTickAt: 0
-            }}
-            axisLeft={{
-                tickSize: 5,
-                tickPadding: 5,
-                tickRotation: 0,
-                legend: 'Interventions',
-                legendPosition: 'middle',
-                legendOffset: -40,
-                truncateTickAt: 0
-            }}
-            enableLabel={false}
-            theme={{
-                axis: {
-                    ticks: {
-                        text: {
-                            fill: '#64748b',
-                            fontSize: 11
-                        }
-                    },
-                    legend: {
-                        text: {
-                            fill: '#64748b',
-                            fontSize: 12
-                        }
-                    }
-                },
-                grid: {
-                    line: {
-                        stroke: '#e2e8f0'
-                    }
-                }
-            }}
-            tooltip={({ indexValue, value }) => (
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
                 <div className="bg-white px-3 py-2 rounded-lg shadow-lg border text-sm">
-                    <strong>{indexValue}</strong>: {value} interventions
+                    <strong>{label}</strong>: {payload[0].value} interventions
                 </div>
-            )}
-        />
+            );
+        }
+        return null;
+    };
+
+    return (
+        <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 10, right: 10, bottom: 50, left: 50 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis
+                    dataKey="month"
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                />
+                <YAxis
+                    tick={{ fill: '#64748b', fontSize: 11 }}
+                    axisLine={{ stroke: '#e2e8f0' }}
+                    tickLine={{ stroke: '#e2e8f0' }}
+                    label={{
+                        value: 'Interventions',
+                        angle: -90,
+                        position: 'insideLeft',
+                        offset: -35,
+                        style: { fill: '#64748b', fontSize: 12 }
+                    }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar
+                    dataKey="count"
+                    fill="#3b82f6"
+                    radius={[4, 4, 0, 0]}
+                />
+            </BarChart>
+        </ResponsiveContainer>
     );
 }

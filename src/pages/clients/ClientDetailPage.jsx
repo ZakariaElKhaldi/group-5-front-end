@@ -54,12 +54,22 @@ export default function ClientDetailPage() {
                 );
                 setMachines(clientMachines);
 
-                // Fetch interventions for this client's machines
-                const interventionsRes = await api.get('/interventions?limit=100');
-                const clientInterventions = (interventionsRes.data.items || []).filter(
-                    i => clientMachines.some(m => m.id === i.machine?.id)
-                );
-                setInterventions(clientInterventions.slice(0, 10)); // Last 10
+                // Fetch workorders for this client's machines
+                const workordersRes = await api.get('/workorders?limit=100');
+                const machineIds = clientMachines.map(m => m.id);
+                const clientWorkorders = (workordersRes.data.items || []).filter(
+                    wo => machineIds.includes(wo.machine?.id)
+                ).map(wo => ({
+                    id: wo.id,
+                    dateDebut: wo.dateReported,
+                    type: wo.type,
+                    statut: wo.status === 'completed' ? 'Terminee' :
+                        wo.status === 'in_progress' ? 'En cours' :
+                            wo.status === 'assigned' ? 'Assignée' : 'En attente',
+                    machine: wo.machine,
+                    coutTotal: wo.estimatedCost || 0,
+                }));
+                setInterventions(clientWorkorders.slice(0, 10)); // Last 10
 
             } catch (error) {
                 console.error('Error loading client:', error);
@@ -369,7 +379,7 @@ export default function ClientDetailPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                                        onClick={() => navigate(`/workorders/${intervention.id}`)}
                                                     >
                                                         <ExternalLink className="h-4 w-4" />
                                                     </Button>

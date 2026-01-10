@@ -52,12 +52,9 @@ export default function TechnicienDetailPage() {
                 const techRes = await api.get(`/techniciens/${id}`);
                 setTechnicien(techRes.data);
 
-                // Fetch interventions assigned to this technician
-                const intRes = await api.get('/interventions?limit=1000');
-                const techInterventions = (intRes.data.items || []).filter(
-                    i => i.technicien?.id === parseInt(id)
-                );
-                setInterventions(techInterventions);
+                // Fetch workorders assigned to this technician (uses the new endpoint)
+                const intRes = await api.get(`/techniciens/${id}/workorders`);
+                setInterventions(intRes.data || []);
 
             } catch (error) {
                 console.error('Error loading technician:', error);
@@ -343,7 +340,7 @@ export default function TechnicienDetailPage() {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => navigate(`/interventions/${intervention.id}`)}
+                                                        onClick={() => navigate(`/workorders/${intervention.id}`)}
                                                     >
                                                         <ExternalLink className="h-4 w-4" />
                                                     </Button>
