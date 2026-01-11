@@ -63,9 +63,8 @@ const adminNavGroups = [
         ],
     },
     {
-        title: 'Équipe & Clients',
+        title: 'Clients',
         items: [
-            { name: 'Techniciens', path: '/techniciens', icon: Users },
             { name: 'Clients', path: '/clients', icon: Building2 },
         ],
     },
@@ -74,7 +73,7 @@ const adminNavGroups = [
         items: [
             { name: 'Utilisateurs', path: '/users', icon: User },
             { name: 'Rôles', path: '/roles', icon: Shield },
-            { name: 'Notifications', path: '/notifications-admin', icon: Bell },
+            { name: 'Notifications', path: '/my-notifications', icon: Bell },
             { name: 'Paramètres', path: '/settings', icon: Settings },
         ],
     },

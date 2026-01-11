@@ -59,9 +59,9 @@ export default function MachinesPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Machines</h1>
                     <p className="text-muted-foreground">Gestion du parc machine</p>
                 </div>
-                <Button onClick={() => navigate('/machines/new')}>
+                {/* <Button onClick={() => navigate('/machines/new')}>
                     <Plus className="mr-2 h-4 w-4" /> Nouvelle Machine
-                </Button>
+                </Button> */}
             </div>
 
             <div className="flex gap-4 items-center bg-card p-4 rounded-lg border">

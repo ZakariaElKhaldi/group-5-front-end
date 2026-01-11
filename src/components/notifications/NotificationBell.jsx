@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell, Info, AlertTriangle, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Bell, Info, AlertTriangle, X, History } from 'lucide-react';
 import api from '@/services/api';
 import {
     DropdownMenu,
@@ -144,6 +145,13 @@ export function NotificationBell() {
                         </DropdownMenuItem>
                     </>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="w-full text-center text-xs justify-center cursor-pointer">
+                    <Link to="/my-notifications" className="flex items-center gap-1">
+                        <History className="h-3 w-3" />
+                        Voir l'historique
+                    </Link>
+                </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );

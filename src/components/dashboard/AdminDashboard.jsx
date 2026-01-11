@@ -87,9 +87,10 @@ export function AdminDashboard() {
                     technicians.map(async (tech) => {
                         try {
                             const workordersData = await api.get(`/techniciens/${tech.id}/workorders`);
-                            const completed = workordersData.data.filter(i => i.statut === 'Terminee').length;
-                            const inProgress = workordersData.data.filter(i => i.statut === 'En cours').length;
-                            const pending = workordersData.data.filter(i => i.statut === 'En attente').length;
+                            // Use WorkOrder field names (status instead of statut)
+                            const completed = workordersData.data.filter(i => i.status === 'completed').length;
+                            const inProgress = workordersData.data.filter(i => i.status === 'in_progress' || i.status === 'pending_parts').length;
+                            const pending = workordersData.data.filter(i => i.status === 'reported' || i.status === 'assigned').length;
                             return {
                                 name: `${tech.user?.prenom || ''} ${tech.user?.nom || ''}`.trim() || 'Inconnu',
                                 completed,
@@ -338,7 +339,7 @@ export function AdminDashboard() {
                 </Card>
             )}
 
-            {/* Advanced Charts Row: Heatmap and Sankey */}
+            {/* Advanced Charts Row: Heatmap and Status Distribution */}
             <div className="grid gap-4 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
@@ -358,12 +359,12 @@ export function AdminDashboard() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <GitBranch className="h-5 w-5 text-indigo-500" />
-                            Flux des Interventions
+                            Distribution par Statut
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="h-[350px]">
-                            <InterventionFlowSankey data={generateInterventionFlowData(allInterventions)} />
+                            <InterventionFlowSankey data={chartData?.interventionsByStatus || []} />
                         </div>
                     </CardContent>
                 </Card>

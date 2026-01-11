@@ -24,7 +24,7 @@ export function InterventionsBarChart({ data }) {
     };
 
     return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <BarChart data={data} margin={{ top: 10, right: 10, bottom: 50, left: 50 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis

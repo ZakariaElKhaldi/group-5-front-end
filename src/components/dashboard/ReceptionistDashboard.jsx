@@ -331,8 +331,8 @@ export function ReceptionistDashboard() {
                                                 <span className="font-medium text-sm">
                                                     {panne.machine?.modele}
                                                 </span>
-                                                <Badge className={getGraviteBadge(panne.gravite)}>
-                                                    {panne.gravite}
+                                                <Badge className={getGraviteBadge(panne.severity || panne.priority)}>
+                                                    {panne.severity || panne.priority || '-'}
                                                 </Badge>
                                             </div>
                                             <p className="text-xs text-muted-foreground truncate max-w-[200px]">
@@ -340,11 +340,13 @@ export function ReceptionistDashboard() {
                                             </p>
                                         </div>
                                         <div className="text-right">
-                                            <Badge variant="outline" className={getStatutBadge(panne.statut)}>
-                                                {panne.statut}
+                                            <Badge variant="outline" className={getStatutBadge(panne.status)}>
+                                                {panne.status || '-'}
                                             </Badge>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                {format(new Date(panne.dateDeclaration), 'dd MMM', { locale: fr })}
+                                                {panne.dateReported
+                                                    ? format(new Date(panne.dateReported), 'dd MMM', { locale: fr })
+                                                    : '-'}
                                             </p>
                                         </div>
                                     </div>
@@ -396,7 +398,9 @@ export function ReceptionistDashboard() {
                                             }
                                         </TableCell>
                                         <TableCell>
-                                            {format(new Date(intervention.dateDebut), 'dd MMM yyyy', { locale: fr })}
+                                            {intervention.dateReported || intervention.scheduledDate
+                                                ? format(new Date(intervention.dateReported || intervention.scheduledDate), 'dd MMM yyyy', { locale: fr })
+                                                : '-'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button

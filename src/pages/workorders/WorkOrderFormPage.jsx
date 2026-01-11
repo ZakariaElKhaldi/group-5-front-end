@@ -2,55 +2,43 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, ClipboardList } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import ClientSection from '@/components/workorders/ClientSection';
+import MachineSection from '@/components/workorders/MachineSection';
+import WorkOrderSection from '@/components/workorders/WorkOrderSection';
+import { uploadImagesToBackend } from '@/components/workorders/PhotoUploader';
 
 export default function WorkOrderFormPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const isEdit = Boolean(id);
 
-    const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [machines, setMachines] = useState([]);
     const [technicians, setTechnicians] = useState([]);
 
-    const [formData, setFormData] = useState({
-        machineId: '',
-        technicienId: '',
+    // Step state - separate tracking for each entity
+    const [selectedClientId, setSelectedClientId] = useState(null);
+    const [selectedMachineId, setSelectedMachineId] = useState(null);
+    const [workOrderImages, setWorkOrderImages] = useState([]);
+
+    // Work order form data
+    const [workOrderData, setWorkOrderData] = useState({
         type: 'corrective',
         origin: 'breakdown',
-        priority: 'normal',
-        severity: 'medium',
+        priority: 'medium',
+        severity: 'moderate',
         description: '',
-        estimatedDuration: '',
+        technicienId: null,
+        estimatedDuration: null,
     });
 
+
+
     useEffect(() => {
-        fetchMachines();
         fetchTechnicians();
         if (isEdit) fetchWorkOrder();
     }, [id]);
-
-    const fetchMachines = async () => {
-        try {
-            const response = await api.get('/machines?limit=100');
-            setMachines(response.data.items || []);
-        } catch (error) {
-            console.error('Error fetching machines:', error);
-        }
-    };
 
     const fetchTechnicians = async () => {
         try {
@@ -62,49 +50,81 @@ export default function WorkOrderFormPage() {
     };
 
     const fetchWorkOrder = async () => {
-        setLoading(true);
         try {
             const response = await api.get(`/workorders/${id}`);
             const wo = response.data;
-            setFormData({
-                machineId: wo.machineId?.toString() || '',
-                technicienId: wo.technicienId?.toString() || '',
+
+            // Set machine first to unlock machine section
+            setSelectedMachineId(wo.machineId);
+
+            // Get client from machine
+            if (wo.machine?.clientId) {
+                setSelectedClientId(wo.machine.clientId);
+            }
+
+            setWorkOrderData({
                 type: wo.type || 'corrective',
                 origin: wo.origin || 'breakdown',
-                priority: wo.priority || 'normal',
+                priority: wo.priority || 'medium',
                 severity: wo.severity || 'medium',
                 description: wo.description || '',
-                estimatedDuration: wo.estimatedDuration?.toString() || '',
+                technicienId: wo.technicienId || null,
+                estimatedDuration: wo.estimatedDuration || null,
             });
         } catch (error) {
             console.error('Error fetching work order:', error);
             toast.error('Erreur lors du chargement');
-        } finally {
-            setLoading(false);
         }
-    };
-
-    const handleChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setSaving(true);
 
+        // Validation
+        if (!selectedMachineId) {
+            toast.error('Veuillez sélectionner une machine');
+            return;
+        }
+        if (!workOrderData.description?.trim()) {
+            toast.error('La description est requise');
+            return;
+        }
+        // Require at least 1 photo for new work orders
+        if (!isEdit && workOrderImages.length === 0) {
+            toast.error('Au moins une photo est requise');
+            return;
+        }
+
+        setSaving(true);
         try {
             const payload = {
-                ...formData,
-                machineId: parseInt(formData.machineId),
-                technicienId: formData.technicienId ? parseInt(formData.technicienId) : null,
-                estimatedDuration: formData.estimatedDuration ? parseInt(formData.estimatedDuration) : null,
+                machineId: selectedMachineId,
+                type: workOrderData.type,
+                origin: workOrderData.origin,
+                priority: workOrderData.priority,
+                severity: workOrderData.severity,
+                description: workOrderData.description,
+                technicienId: workOrderData.technicienId,
+                estimatedDuration: workOrderData.estimatedDuration,
             };
 
             if (isEdit) {
                 await api.put(`/workorders/${id}`, payload);
                 toast.success('Ordre de travail modifié');
             } else {
-                await api.post('/workorders', payload);
+                const response = await api.post('/workorders', payload);
+                const newWorkOrder = response.data;
+
+                // Upload work order images if any
+                if (workOrderImages.length > 0) {
+                    try {
+                        await uploadImagesToBackend(newWorkOrder.id, 'workorder', workOrderImages, api);
+                    } catch (imgError) {
+                        console.error('Image upload failed:', imgError);
+                        toast.error('Ordre créé mais erreur lors du téléchargement des photos');
+                    }
+                }
+
                 toast.success('Ordre de travail créé');
             }
             navigate('/workorders');
@@ -116,158 +136,82 @@ export default function WorkOrderFormPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-        );
-    }
+    // Handle client change - reset machine selection
+    const handleClientChange = (clientId) => {
+        setSelectedClientId(clientId);
+        if (selectedMachineId) {
+            setSelectedMachineId(null); // Reset machine when client changes
+        }
+    };
+
+    const isWorkOrderComplete = workOrderData.description?.trim().length > 0 &&
+        (isEdit || workOrderImages.length > 0);
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" onClick={() => navigate('/workorders')}>
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <ClipboardList className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold">
+                            {isEdit ? 'Modifier l\'ordre de travail' : 'Nouvel ordre de travail'}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            Remplissez les sections ci-dessous pour créer un ordre de travail
+                        </p>
+                    </div>
+                </div>
+                <Button variant="outline" onClick={() => navigate('/workorders')}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Retour
                 </Button>
-                <div>
-                    <h1 className="text-3xl font-bold">
-                        {isEdit ? 'Modifier l\'ordre de travail' : 'Nouvel ordre de travail'}
-                    </h1>
-                </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                    {/* Type & Origin */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Classification</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Type de maintenance *</Label>
-                                <Select value={formData.type} onValueChange={(v) => handleChange('type', v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="corrective">Corrective</SelectItem>
-                                        <SelectItem value="preventive">Préventive</SelectItem>
-                                        <SelectItem value="inspection">Inspection</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Origine</Label>
-                                <Select value={formData.origin} onValueChange={(v) => handleChange('origin', v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="breakdown">Panne</SelectItem>
-                                        <SelectItem value="scheduled">Planifié</SelectItem>
-                                        <SelectItem value="request">Demande</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </CardContent>
-                    </Card>
+                {/* Step 1: Client Selection */}
+                <ClientSection
+                    selectedClientId={selectedClientId}
+                    onClientSelect={handleClientChange}
+                    isComplete={selectedClientId !== null}
+                />
 
-                    {/* Priority & Severity */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Priorité</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Priorité *</Label>
-                                <Select value={formData.priority} onValueChange={(v) => handleChange('priority', v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="low">Basse</SelectItem>
-                                        <SelectItem value="normal">Normale</SelectItem>
-                                        <SelectItem value="high">Haute</SelectItem>
-                                        <SelectItem value="urgent">Urgente</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Sévérité</Label>
-                                <Select value={formData.severity} onValueChange={(v) => handleChange('severity', v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="minor">Mineure</SelectItem>
-                                        <SelectItem value="medium">Moyenne</SelectItem>
-                                        <SelectItem value="major">Majeure</SelectItem>
-                                        <SelectItem value="critical">Critique</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                {/* Step 2: Machine Selection */}
+                <MachineSection
+                    clientId={selectedClientId}
+                    selectedMachineId={selectedMachineId}
+                    onMachineSelect={setSelectedMachineId}
+                    isComplete={selectedMachineId !== null}
+                />
 
-                {/* Machine & Technician */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Affectation</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label>Machine *</Label>
-                            <Select value={formData.machineId} onValueChange={(v) => handleChange('machineId', v)}>
-                                <SelectTrigger><SelectValue placeholder="Sélectionner une machine" /></SelectTrigger>
-                                <SelectContent>
-                                    {machines.map(m => (
-                                        <SelectItem key={m.id} value={m.id.toString()}>
-                                            {m.modele} - {m.reference}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Technicien</Label>
-                            <Select value={formData.technicienId || '__unassigned__'} onValueChange={(v) => handleChange('technicienId', v === '__unassigned__' ? '' : v)}>
-                                <SelectTrigger><SelectValue placeholder="Assigner un technicien" /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="__unassigned__">Non assigné</SelectItem>
-                                    {technicians.map(t => (
-                                        <SelectItem key={t.id} value={t.id.toString()}>
-                                            {t.user?.nom} {t.user?.prenom}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Durée estimée (minutes)</Label>
-                            <Input type="number" value={formData.estimatedDuration}
-                                onChange={(e) => handleChange('estimatedDuration', e.target.value)}
-                                placeholder="60" />
-                        </div>
-                    </CardContent>
-                </Card>
+                {/* Step 3: Work Order Details */}
+                <WorkOrderSection
+                    isEnabled={selectedMachineId !== null}
+                    formData={workOrderData}
+                    onChange={setWorkOrderData}
+                    technicians={technicians}
+                    isComplete={isWorkOrderComplete}
+                    images={workOrderImages}
+                    onImagesChange={setWorkOrderImages}
+                />
 
-                {/* Description */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Description</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Textarea value={formData.description}
-                            onChange={(e) => handleChange('description', e.target.value)}
-                            placeholder="Décrivez le problème ou la tâche à effectuer..."
-                            rows={4} />
-                    </CardContent>
-                </Card>
-
-                {/* Actions */}
+                {/* Submit Actions */}
                 <div className="flex justify-end gap-4">
-                    <Button type="button" variant="outline" onClick={() => navigate('/workorders')}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => navigate('/workorders')}
+                    >
                         Annuler
                     </Button>
-                    <Button type="submit" disabled={saving || !formData.machineId}>
+                    <Button
+                        type="submit"
+                        disabled={saving || !selectedMachineId || !isWorkOrderComplete}
+                    >
                         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         <Save className="mr-2 h-4 w-4" />
-                        {isEdit ? 'Enregistrer' : 'Créer'}
+                        {isEdit ? 'Enregistrer' : 'Créer l\'ordre de travail'}
                     </Button>
                 </div>
             </form>

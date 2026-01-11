@@ -71,21 +71,23 @@ export function TechnicienDashboardStats() {
 
     // Calculate stats from interventions
     const stats = useMemo(() => {
-        const enAttente = myInterventions.filter(i => i.statut === 'En attente').length;
-        const enCours = myInterventions.filter(i => i.statut === 'En cours').length;
-        const terminees = myInterventions.filter(i => i.statut === 'Terminee').length;
+        // Use WorkOrder field names (status instead of statut)
+        const enAttente = myInterventions.filter(i => i.status === 'reported' || i.status === 'assigned').length;
+        const enCours = myInterventions.filter(i => i.status === 'in_progress' || i.status === 'pending_parts').length;
+        const terminees = myInterventions.filter(i => i.status === 'completed').length;
         const total = myInterventions.length;
 
-        // Monthly stats
+        // Monthly stats - use dateReported instead of dateDebut
         const monthStart = startOfMonth(new Date());
         const thisMonthInterventions = myInterventions.filter(i =>
-            i.dateDebut && isAfter(new Date(i.dateDebut), monthStart)
+            i.dateReported && isAfter(new Date(i.dateReported), monthStart)
         );
-        const thisMonthCompleted = thisMonthInterventions.filter(i => i.statut === 'Terminee');
+        const thisMonthCompleted = thisMonthInterventions.filter(i => i.status === 'completed');
 
         // Calculate total hours worked this month
+        // Use actualDuration (in minutes) instead of dureeReelle
         const totalHoursThisMonth = thisMonthCompleted.reduce((acc, i) => {
-            return acc + (i.dureeReelle ? i.dureeReelle / 60 : 0);
+            return acc + (i.actualDuration ? i.actualDuration / 60 : 0);
         }, 0);
 
         // Calculate earnings this month
@@ -93,9 +95,9 @@ export function TechnicienDashboardStats() {
         const earningsThisMonth = totalHoursThisMonth * tauxHoraire;
 
         // Calculate average duration (in hours)
-        const completedWithDuration = myInterventions.filter(i => i.statut === 'Terminee' && i.dureeReelle);
+        const completedWithDuration = myInterventions.filter(i => i.status === 'completed' && i.actualDuration);
         const avgDuration = completedWithDuration.length > 0
-            ? completedWithDuration.reduce((acc, i) => acc + (i.dureeReelle / 60), 0) / completedWithDuration.length
+            ? completedWithDuration.reduce((acc, i) => acc + (i.actualDuration / 60), 0) / completedWithDuration.length
             : 0;
 
         return {
