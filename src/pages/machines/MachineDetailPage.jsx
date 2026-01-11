@@ -2,9 +2,17 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, QrCode, Printer, Edit, FileText } from 'lucide-react';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { ArrowLeft, Edit, Wrench, Eye } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -16,6 +24,8 @@ export default function MachineDetailPage() {
     const navigate = useNavigate();
     const [machine, setMachine] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [workOrders, setWorkOrders] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(true);
 
     const fetchMachine = async () => {
         try {
@@ -30,8 +40,20 @@ export default function MachineDetailPage() {
         }
     };
 
+    const fetchWorkOrders = async () => {
+        try {
+            const response = await api.get(`/machines/${id}/interventions`);
+            setWorkOrders(response.data || []);
+        } catch (error) {
+            console.error('Error fetching work orders:', error);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
     useEffect(() => {
         fetchMachine();
+        fetchWorkOrders();
     }, [id]);
 
     const getStatusColor = (statut) => {
@@ -128,6 +150,86 @@ export default function MachineDetailPage() {
                     <MachineImageGallery machine={machine} onUpdate={fetchMachine} />
                 </div>
             </div>
+
+            {/* Work Order History Section */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wrench className="h-5 w-5 text-amber-500" />
+                        Historique des interventions ({workOrders.length})
+                    </CardTitle>
+                    <CardDescription>
+                        Toutes les interventions passées sur cette machine
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {loadingHistory ? (
+                        <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        </div>
+                    ) : workOrders.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                            <Wrench className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>Aucune intervention pour cette machine</p>
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Statut</TableHead>
+                                    <TableHead>Technicien</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {workOrders.map((wo) => (
+                                    <TableRow key={wo.id}>
+                                        <TableCell>
+                                            {wo.dateReported
+                                                ? format(new Date(wo.dateReported), 'dd/MM/yyyy', { locale: fr })
+                                                : '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={wo.type === 'corrective' ? 'destructive' : 'secondary'}>
+                                                {wo.type === 'corrective' ? 'Corrective' :
+                                                    wo.type === 'preventive' ? 'Préventive' : 'Inspection'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className={
+                                                wo.status === 'completed' ? 'bg-green-500' :
+                                                    wo.status === 'in_progress' ? 'bg-blue-500' :
+                                                        wo.status === 'assigned' ? 'bg-yellow-500 text-black' : 'bg-gray-500'
+                                            }>
+                                                {wo.status === 'completed' ? 'Terminé' :
+                                                    wo.status === 'in_progress' ? 'En cours' :
+                                                        wo.status === 'assigned' ? 'Assigné' :
+                                                            wo.status === 'reported' ? 'Signalé' : wo.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {wo.technicien?.user?.nom
+                                                ? `${wo.technicien.user.nom} ${wo.technicien.user.prenom || ''}`
+                                                : <span className="text-muted-foreground italic">Non assigné</span>}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => navigate(`/workorders/${wo.id}`)}
+                                            >
+                                                <Eye className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

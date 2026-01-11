@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import api from '@/services/api';
 import {
     Dialog,
@@ -16,6 +16,7 @@ import { toast } from 'react-hot-toast';
 
 /**
  * Client signature modal for work order completion
+ * Only available for completed work orders that haven't been signed yet
  */
 export function SignatureModal({ workOrderId, open, onOpenChange, onSigned }) {
     const canvasRef = useRef(null);
@@ -23,6 +24,19 @@ export function SignatureModal({ workOrderId, open, onOpenChange, onSigned }) {
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasSignature, setHasSignature] = useState(false);
     const [saving, setSaving] = useState(false);
+
+    // Callback ref - runs once when canvas mounts, efficiently clears it
+    const initCanvas = useCallback((canvas) => {
+        if (canvas) {
+            canvasRef.current = canvas;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Reset state
+            setSignerName('');
+            setHasSignature(false);
+        }
+    }, []);
 
     const getMousePos = (e, canvas) => {
         const rect = canvas.getBoundingClientRect();
@@ -144,7 +158,7 @@ export function SignatureModal({ workOrderId, open, onOpenChange, onSigned }) {
                         </div>
                         <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white">
                             <canvas
-                                ref={canvasRef}
+                                ref={initCanvas}
                                 width={400}
                                 height={200}
                                 className="w-full cursor-crosshair touch-none"

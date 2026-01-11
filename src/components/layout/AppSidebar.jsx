@@ -88,6 +88,12 @@ const techNavGroups = [
             { name: 'Mes Ordres', path: '/workorders', icon: ClipboardList },
         ],
     },
+    {
+        title: 'Ressources',
+        items: [
+            { name: 'Pièces', path: '/pieces', icon: Package },
+        ],
+    },
 ];
 
 const receptionistNavGroups = [

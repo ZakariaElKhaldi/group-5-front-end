@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Plus, Edit, Trash2, Search, AlertTriangle, Package } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/context/AuthContext';
 
 export default function PiecesPage() {
     const [pieces, setPieces] = useState([]);
@@ -22,6 +23,7 @@ export default function PiecesPage() {
     const [filters, setFilters] = useState({ page: 1, limit: 10, search: '' });
     const [showLowStock, setShowLowStock] = useState(false);
     const navigate = useNavigate();
+    const { isAdmin } = useAuth();
 
     const fetchPieces = async () => {
         setLoading(true);
@@ -82,9 +84,11 @@ export default function PiecesPage() {
                     </h1>
                     <p className="text-muted-foreground">Gestion de l'inventaire des pièces</p>
                 </div>
-                <Button onClick={() => navigate('/pieces/new')}>
-                    <Plus className="mr-2 h-4 w-4" /> Nouvelle Pièce
-                </Button>
+                {isAdmin() && (
+                    <Button onClick={() => navigate('/pieces/new')}>
+                        <Plus className="mr-2 h-4 w-4" /> Nouvelle Pièce
+                    </Button>
+                )}
             </div>
 
             {/* Filters */}
@@ -118,7 +122,7 @@ export default function PiecesPage() {
                             <TableHead className="text-center">Stock</TableHead>
                             <TableHead className="text-right">Prix unitaire</TableHead>
                             <TableHead>Emplacement</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                            {isAdmin() && <TableHead className="text-right">Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -142,14 +146,16 @@ export default function PiecesPage() {
                                     </TableCell>
                                     <TableCell className="text-right">{piece.prixUnitaire?.toFixed(2)} €</TableCell>
                                     <TableCell>{piece.emplacement || '-'}</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => navigate(`/pieces/${piece.id}/edit`)}>
-                                            <Edit className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDelete(piece.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500" />
-                                        </Button>
-                                    </TableCell>
+                                    {isAdmin() && (
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" onClick={() => navigate(`/pieces/${piece.id}/edit`)}>
+                                                <Edit className="h-4 w-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleDelete(piece.id)}>
+                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                            </Button>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))
                         )}

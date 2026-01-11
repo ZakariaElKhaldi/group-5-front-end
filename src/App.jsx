@@ -90,6 +90,12 @@ function App() {
                 <Route path="/interventions/*" element={<Navigate to="/workorders" replace />} />
                 <Route path="/pannes/*" element={<Navigate to="/workorders" replace />} />
 
+                {/* Pieces (Inventory) - View accessible to all, edit admin-only */}
+                <Route path="/pieces" element={<PiecesPage />} />
+
+                {/* Machines - View detail accessible to all (for technicians to see from work orders) */}
+                <Route path="/machines/:id" element={<MachineDetailPage />} />
+
                 {/* Admin-only routes */}
                 <Route element={<ProtectedRoute requiredRole="ROLE_ADMIN"><Outlet /></ProtectedRoute>}>
                   {/* Settings - Admin only */}
@@ -106,8 +112,7 @@ function App() {
                   <Route path="/techniciens/:id" element={<TechnicienDetailPage />} />
                   <Route path="/techniciens/:id/edit" element={<Navigate to="/users?tab=technicians" replace />} />
 
-                  {/* Pièces (Inventory) - Admin only */}
-                  <Route path="/pieces" element={<PiecesPage />} />
+                  {/* Pièces (Inventory) - Create/Edit Admin only */}
                   <Route path="/pieces/new" element={<PieceFormPage />} />
                   <Route path="/pieces/:id/edit" element={<PieceFormPage />} />
                   <Route path="/stock-history" element={<StockHistoryPage />} />
@@ -121,10 +126,9 @@ function App() {
 
                 {/* Receptionist + Admin routes */}
                 <Route element={<ProtectedRoute requiredRole="ROLE_RECEPTIONIST"><Outlet /></ProtectedRoute>}>
-                  {/* Machines */}
+                  {/* Machines - List and Edit (Receptionist+Admin only) */}
                   <Route path="/machines" element={<MachinesPage />} />
                   {/* <Route path="/machines/new" element={<MachineFormPage />} /> */}
-                  <Route path="/machines/:id" element={<MachineDetailPage />} />
                   <Route path="/machines/:id/edit" element={<MachineFormPage />} />
 
                   {/* Clients */}
