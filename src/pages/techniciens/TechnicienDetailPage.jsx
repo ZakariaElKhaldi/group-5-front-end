@@ -13,7 +13,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import {
-    ArrowLeft,
     User,
     Mail,
     Phone,
@@ -137,21 +136,15 @@ export default function TechnicienDetailPage() {
         <div className="max-w-6xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/techniciens')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
-                            <User className="h-6 w-6 text-blue-500" />
-                            {technicien.user?.nom} {technicien.user?.prenom}
-                        </h1>
-                        <div className="flex items-center gap-2 mt-1">
-                            {getStatusBadge(technicien.statut)}
-                            <span className="text-sm text-muted-foreground">
-                                • {technicien.specialite || 'Non spécifié'}
-                            </span>
-                        </div>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        {technicien.user?.prenom} {technicien.user?.nom}
+                    </h1>
+                    <div className="flex items-center gap-2 mt-1">
+                        {getStatusBadge(technicien.statut)}
+                        <span className="text-muted-foreground">
+                            • {technicien.specialite || 'Non spécifié'}
+                        </span>
                     </div>
                 </div>
                 <div className="flex gap-2">

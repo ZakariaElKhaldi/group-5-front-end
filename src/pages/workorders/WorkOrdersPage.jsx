@@ -20,9 +20,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Eye, ClipboardList } from 'lucide-react';
+import { Plus, Search, Eye, ClipboardList, HandHelping } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'react-hot-toast';
 
 // Status badge component for WorkOrder
 const StatusBadge = ({ status }) => {
@@ -97,6 +99,7 @@ export default function WorkOrdersPage() {
     });
     const navigate = useNavigate();
     const { isTechnicien, isAdmin, getTechnicienId } = useAuth();
+    const [viewMode, setViewMode] = useState('mine'); // 'mine' or 'available'
 
     const fetchWorkOrders = async () => {
         setLoading(true);
@@ -110,10 +113,14 @@ export default function WorkOrdersPage() {
             if (filters.priority !== 'all') params.append('priority', filters.priority);
             if (filters.search) params.append('search', filters.search);
 
-            // If technician, filter by their ID
+            // Technician view modes
             if (isTechnicien() && !isAdmin()) {
-                const techId = getTechnicienId();
-                if (techId) params.append('technicienId', techId);
+                if (viewMode === 'available') {
+                    params.append('available', 'true');
+                } else {
+                    const techId = getTechnicienId();
+                    if (techId) params.append('technicienId', techId);
+                }
             }
 
             const response = await api.get(`/workorders?${params.toString()}`);
@@ -132,18 +139,28 @@ export default function WorkOrdersPage() {
 
     useEffect(() => {
         fetchWorkOrders();
-    }, [filters]);
+    }, [filters, viewMode]);
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+    };
+
+    const handleClaim = async (workOrderId, e) => {
+        e.stopPropagation();
+        try {
+            await api.put(`/workorders/${workOrderId}/claim`);
+            toast.success('Ordre pris en charge !');
+            fetchWorkOrders();
+        } catch (error) {
+            toast.error(error.response?.data?.error || 'Erreur lors de la prise en charge');
+        }
     };
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <ClipboardList className="h-8 w-8" />
+                    <h1 className="text-3xl font-bold tracking-tight">
                         Ordres de Travail
                     </h1>
                     <p className="text-muted-foreground">
@@ -154,6 +171,19 @@ export default function WorkOrdersPage() {
                     <Plus className="mr-2 h-4 w-4" /> Nouvel Ordre
                 </Button>
             </div>
+
+            {/* Technician View Mode Tabs */}
+            {isTechnicien() && !isAdmin() && (
+                <Tabs value={viewMode} onValueChange={setViewMode} className="w-full">
+                    <TabsList className="grid w-full max-w-md grid-cols-2">
+                        <TabsTrigger value="mine">Mes ordres</TabsTrigger>
+                        <TabsTrigger value="available" className="flex items-center gap-2">
+                            <HandHelping className="h-4 w-4" />
+                            Disponibles
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            )}
 
             {/* Filters */}
             <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-lg border">
@@ -266,6 +296,17 @@ export default function WorkOrdersPage() {
                                         {wo.dateReported && format(new Date(wo.dateReported), 'dd MMM yyyy', { locale: fr })}
                                     </TableCell>
                                     <TableCell className="text-right">
+                                        {viewMode === 'available' && !wo.technicienId && isTechnicien() && (
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                className="mr-2 bg-green-600 hover:bg-green-700"
+                                                onClick={(e) => handleClaim(wo.id, e)}
+                                            >
+                                                <HandHelping className="h-4 w-4 mr-1" />
+                                                Prendre
+                                            </Button>
+                                        )}
                                         <Button variant="ghost" size="icon"
                                             onClick={(e) => { e.stopPropagation(); navigate(`/workorders/${wo.id}`); }}>
                                             <Eye className="h-4 w-4" />

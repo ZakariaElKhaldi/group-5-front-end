@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import {
-    Settings,
     Building2,
     Phone,
     Mail,
@@ -16,7 +15,6 @@ import {
     FileText,
     Save,
     Loader2,
-    ArrowLeft,
     Globe,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -80,19 +78,11 @@ export default function SettingsPage() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
-                    <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <Settings className="h-6 w-6" />
-                        Paramètres
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Configuration de l'application et informations de l'entreprise
-                    </p>
-                </div>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Paramètres</h1>
+                <p className="text-muted-foreground">
+                    Configuration de l'application et informations de l'entreprise
+                </p>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -175,14 +165,74 @@ export default function SettingsPage() {
 
                         <Separator />
 
+                        {/* Financial Info */}
+                        <div>
+                            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                                <FileText className="h-4 w-4 text-green-600" />
+                                Informations Bancaires & Facturation
+                            </h3>
+
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Banque</label>
+                                    <Input
+                                        placeholder="Banque Populaire"
+                                        value={formData.bankName || ''}
+                                        onChange={(e) => handleInputChange('bankName', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">RIB / IBAN</label>
+                                    <Input
+                                        placeholder="123456789012345678901234"
+                                        value={formData.rib || ''}
+                                        onChange={(e) => handleInputChange('rib', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-4 mt-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">TVA (%)</label>
+                                    <Input
+                                        type="number"
+                                        placeholder="20"
+                                        value={formData.taxRate || '20'}
+                                        onChange={(e) => handleInputChange('taxRate', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Devise</label>
+                                    <Input
+                                        placeholder="DH"
+                                        value={formData.currency || 'DH'}
+                                        onChange={(e) => handleInputChange('currency', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 mt-4">
+                                <label className="text-sm font-medium">Note de bas de page (Conditions de paiement)</label>
+                                <Textarea
+                                    placeholder="Merci de régler cette facture sous 30 jours."
+                                    value={formData.invoiceNotes || ''}
+                                    onChange={(e) => handleInputChange('invoiceNotes', e.target.value)}
+                                    rows={2}
+                                />
+                            </div>
+                        </div>
+
+                        <Separator />
+
                         {/* Legal Info */}
                         <div>
                             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-amber-500" />
                                 Informations Légales
-                                <Badge variant="outline" className="ml-2">Obligatoire pour les factures</Badge>
+                                <Badge variant="outline" className="ml-2">Obligatoire</Badge>
                             </h3>
 
+                            {/* Legal inputs existing code... */}
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium">

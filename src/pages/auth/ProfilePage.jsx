@@ -39,14 +39,14 @@ export default function ProfilePage() {
             return;
         }
 
-        if (passwords.newPassword.length < 6) {
-            toast.error('Le nouveau mot de passe doit faire au moins 6 caractères');
+        if (passwords.newPassword.length < 8) {
+            toast.error('Le nouveau mot de passe doit faire au moins 8 caractères');
             return;
         }
 
         setChanging(true);
         try {
-            await api.post('/profile/change-password', {
+            await api.patch('/me/password', {
                 currentPassword: passwords.currentPassword,
                 newPassword: passwords.newPassword
             });
@@ -178,12 +178,12 @@ export default function ProfilePage() {
                                 <div className="pt-2 space-y-1">
                                     <p className="text-xs font-medium text-muted-foreground mb-1">Critères du mot de passe :</p>
                                     <div className="flex items-center gap-1.5 text-xs">
-                                        {passwords.newPassword.length >= 6 ?
+                                        {passwords.newPassword.length >= 8 ?
                                             <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> :
                                             <XCircle className="h-3.5 w-3.5 text-slate-300" />
                                         }
-                                        <span className={passwords.newPassword.length >= 6 ? 'text-green-600' : 'text-slate-500'}>
-                                            Au moins 6 caractères
+                                        <span className={passwords.newPassword.length >= 8 ? 'text-green-600' : 'text-slate-500'}>
+                                            Au moins 8 caractères
                                         </span>
                                     </div>
                                 </div>

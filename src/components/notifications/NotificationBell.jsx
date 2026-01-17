@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Bell, Info, AlertTriangle, X, History } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Bell, Info, AlertTriangle, CheckCircle, X, History, ExternalLink } from 'lucide-react';
 import api from '@/services/api';
 import {
     DropdownMenu,
@@ -17,8 +17,10 @@ import { fr } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 
 export function NotificationBell() {
+    const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [open, setOpen] = useState(false);
     const lastNotificationIds = useRef(new Set());
 
     const fetchNotifications = async () => {
@@ -60,6 +62,17 @@ export function NotificationBell() {
         }
     };
 
+    const handleNotificationClick = async (notification) => {
+        // Mark as read
+        await markAsRead(notification.id);
+
+        // Navigate if actionUrl exists
+        if (notification.actionUrl) {
+            setOpen(false);
+            navigate(notification.actionUrl);
+        }
+    };
+
     const markAllAsRead = async () => {
         try {
             await api.post('/notifications/read-all');
@@ -74,14 +87,15 @@ export function NotificationBell() {
 
     const getTypeIcon = (type) => {
         switch (type) {
-            case 'urgent': return <AlertTriangle className="h-4 w-4 text-red-500" />;
+            case 'alert': return <AlertTriangle className="h-4 w-4 text-red-500" />;
             case 'warning': return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+            case 'success': return <CheckCircle className="h-4 w-4 text-green-500" />;
             default: return <Info className="h-4 w-4 text-blue-500" />;
         }
     };
 
     return (
-        <DropdownMenu>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative h-9 w-9">
                     <Bell className="h-5 w-5" />
@@ -109,11 +123,18 @@ export function NotificationBell() {
                         </div>
                     ) : (
                         notifications.map((n) => (
-                            <div key={n.id} className="p-3 border-b last:border-0 hover:bg-muted/50 transition-colors group relative">
+                            <div
+                                key={n.id}
+                                className={`p-3 border-b last:border-0 hover:bg-muted/50 transition-colors group relative ${n.actionUrl ? 'cursor-pointer' : ''}`}
+                                onClick={() => handleNotificationClick(n)}
+                            >
                                 <div className="flex gap-3">
                                     <div className="mt-1">{getTypeIcon(n.type)}</div>
                                     <div className="flex-1 space-y-1">
-                                        <p className="text-sm font-medium leading-none">{n.titre}</p>
+                                        <p className="text-sm font-medium leading-none flex items-center gap-1">
+                                            {n.titre}
+                                            {n.actionUrl && <ExternalLink className="h-3 w-3 text-muted-foreground" />}
+                                        </p>
                                         <p className="text-xs text-muted-foreground line-clamp-2">
                                             {n.message}
                                         </p>
@@ -125,7 +146,7 @@ export function NotificationBell() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={() => markAsRead(n.id)}
+                                        onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
                                     >
                                         <X className="h-3 w-3" />
                                     </Button>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -34,13 +35,14 @@ import {
 } from '@/components/ui/table';
 import {
     Bell, Loader2, AlertTriangle, Info, CheckCircle,
-    Inbox, History, Check, Plus, Send, RefreshCw
+    Inbox, History, Check, Plus, Send, RefreshCw, ExternalLink, Eye
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 
 export default function MyNotificationsPage() {
+    const navigate = useNavigate();
     const { isAdmin } = useAuth();
     const [tab, setTab] = useState('inbox');
     const [inboxNotifications, setInboxNotifications] = useState([]);
@@ -86,6 +88,15 @@ export default function MyNotificationsPage() {
             toast.success('Marquée comme lue');
         } catch (error) {
             console.error('Mark as read error:', error);
+        }
+    };
+
+    const handleNotificationClick = async (notification) => {
+        if (tab === 'inbox') {
+            await markAsRead(notification.id);
+        }
+        if (notification.actionUrl) {
+            navigate(notification.actionUrl);
         }
     };
 
@@ -151,8 +162,7 @@ export default function MyNotificationsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-                        <Bell className="h-8 w-8 text-blue-500" />
+                    <h1 className="text-3xl font-bold tracking-tight">
                         Notifications
                     </h1>
                     <p className="text-muted-foreground">Gérez vos notifications et votre historique</p>
@@ -305,9 +315,18 @@ export default function MyNotificationsPage() {
                             </TableRow>
                         ) : (
                             notifications.map((n) => (
-                                <TableRow key={n.id}>
+                                <TableRow
+                                    key={n.id}
+                                    className={n.actionUrl ? 'cursor-pointer hover:bg-muted/50' : ''}
+                                    onClick={() => n.actionUrl && handleNotificationClick(n)}
+                                >
                                     <TableCell>{getTypeIcon(n.type)}</TableCell>
-                                    <TableCell className="font-medium">{n.titre}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-1">
+                                            {n.titre}
+                                            {n.actionUrl && <ExternalLink className="h-3 w-3 text-muted-foreground" />}
+                                        </div>
+                                    </TableCell>
                                     <TableCell className="hidden md:table-cell text-muted-foreground max-w-[300px] truncate">
                                         {n.message}
                                     </TableCell>
@@ -323,11 +342,22 @@ export default function MyNotificationsPage() {
                                         </TableCell>
                                     )}
                                     {tab === 'inbox' && (
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right space-x-2">
+                                            {n.actionUrl && (
+                                                <Button
+                                                    variant="default"
+                                                    size="sm"
+                                                    className="bg-blue-600 hover:bg-blue-700"
+                                                    onClick={(e) => { e.stopPropagation(); handleNotificationClick(n); }}
+                                                >
+                                                    <Eye className="h-4 w-4 mr-1" />
+                                                    Voir
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => markAsRead(n.id)}
+                                                onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
                                             >
                                                 <Check className="h-4 w-4 mr-1" />
                                                 Marquer lu

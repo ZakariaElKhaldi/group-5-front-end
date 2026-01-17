@@ -68,16 +68,11 @@ export default function CalendarPage() {
     const renderHeader = () => {
         return (
             <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <CalendarIcon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight capitalize">
-                            {format(currentMonth, 'MMMM yyyy', { locale: fr })}
-                        </h1>
-                        <p className="text-muted-foreground">Planning des ordres de travail</p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight capitalize">
+                        {format(currentMonth, 'MMMM yyyy', { locale: fr })}
+                    </h1>
+                    <p className="text-muted-foreground">Planning des ordres de travail</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center border rounded-lg bg-card overflow-hidden">

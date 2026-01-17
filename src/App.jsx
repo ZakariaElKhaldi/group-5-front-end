@@ -12,6 +12,7 @@ import DashboardPage from '@/pages/DashboardPage';
 
 // Lazy loaded pages - split into chunks
 const ProfilePage = lazy(() => import('@/pages/auth/ProfilePage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'));
 
 // WorkOrders
@@ -47,6 +48,7 @@ const SettingsPage = lazy(() => import('@/pages/settings/SettingsPage'));
 const MyNotificationsPage = lazy(() => import('@/pages/notifications/MyNotificationsPage'));
 const UsersPage = lazy(() => import('@/pages/users/UsersPage'));
 const RolesPage = lazy(() => import('@/pages/roles/RolesPage'));
+const PasswordRequestsPage = lazy(() => import('@/pages/admin/PasswordRequestsPage'));
 
 // Loading fallback component
 function PageLoader() {
@@ -66,6 +68,7 @@ function App() {
             <Routes>
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
               {/* Protected routes - All authenticated users */}
               <Route
@@ -122,6 +125,9 @@ function App() {
                   <Route path="/fournisseurs/new" element={<FournisseurFormPage />} />
                   <Route path="/fournisseurs/:id" element={<FournisseurDetailPage />} />
                   <Route path="/fournisseurs/:id/edit" element={<FournisseurFormPage />} />
+
+                  {/* Admin - Password Reset Requests */}
+                  <Route path="/admin/password-requests" element={<PasswordRequestsPage />} />
                 </Route>
 
                 {/* Receptionist + Admin routes */}

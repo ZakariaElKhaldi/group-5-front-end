@@ -214,8 +214,8 @@ export default function UsersPage() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold flex items-center gap-2">
-                        <Users className="h-8 w-8" /> Gestion des Utilisateurs
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Gestion des Utilisateurs
                     </h1>
                     <p className="text-muted-foreground">Gérez les comptes utilisateur et les profils techniciens</p>
                 </div>

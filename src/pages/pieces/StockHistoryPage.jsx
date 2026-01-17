@@ -24,7 +24,6 @@ import {
     ArrowDownCircle,
     ArrowUpCircle,
     Package,
-    ArrowLeft,
     Search,
     TrendingUp,
     TrendingDown,
@@ -124,19 +123,13 @@ export default function StockHistoryPage() {
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Button variant="ghost" size="icon" onClick={() => navigate('/pieces')}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold flex items-center gap-2">
-                            <Package className="h-6 w-6 text-blue-500" />
-                            Historique des Mouvements de Stock
-                        </h1>
-                        <p className="text-muted-foreground text-sm">
-                            Suivi des entrées et sorties de pièces
-                        </p>
-                    </div>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Historique des Mouvements de Stock
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Suivi des entrées et sorties de pièces
+                    </p>
                 </div>
                 <Button variant="outline" onClick={fetchData}>
                     <RefreshCw className="h-4 w-4 mr-2" />
